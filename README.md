@@ -1,104 +1,60 @@
 # ChainLab 🚀
 
-**ChainLab: AI Destekli Bütünleşik Web3 Geliştirme Ortamı.**
+**Live Demo: [chainlab.dev](https://chainlab.dev)**
 
-ChainLab, tüm Web3 geliştirme yaşam döngüsünü kolaylaştırmak için tasarlanmış, tarayıcı tabanlı kapsamlı bir platformdur. Akıllı kontrat oluşturma ve ön yüz tasarımından test, dağıtım ve yönetime kadar ChainLab, karmaşık blok zinciri uygulamalarının önemli ölçüde azaltılmış kodlama gereksinimleri ve gelişmiş yapay zeka yardımıyla oluşturulabileceği birleşik bir ortam sunar.
+**ChainLab: AI-Powered Integrated Web3 Development Environment.**
 
-Vizyonumuz, Web3 geliştirmeyi demokratikleştirmek ve bir sonraki milyon geliştiricinin merkezi olmayan ekosisteme katkıda bulunmasını sağlayarak blok zinciri geliştirmeyi herkes için erişilebilir ve verimli hale getirmektir.
+ChainLab is a comprehensive, browser-based platform designed to streamline the entire Web3 development lifecycle. From smart contract creation and frontend design to testing, deployment, and management, ChainLab provides a unified environment where complex blockchain applications can be built with significantly reduced coding requirements and advanced AI assistance.
 
-## ✨ Temel Özellikler
+Our vision is to democratize Web3 development, making blockchain development accessible and efficient for everyone, thereby empowering the next million developers to contribute to the decentralized ecosystem.
 
-ChainLab, Web3 geliştirmedeki dağınık araçlar, yüksek teknik engeller ve verimsiz işbirliği gibi yaygın zorlukları ele alarak şunları sunar:
+## ✨ Core Features
 
-- **🧠 AI Destekli Akıllı Kontrat Geliştirme:**
-  - Tarayıcı Tabanlı IDE (WebContainer Teknolojisi ile VS Code benzeri deneyim)
-  - Doğal Dilden Koda Çeviri (DeepSeek, O1, Claude, özel modeller)
-  - Akıllı Hata Ayıklama ve Kod Optimizasyonu
-  - Otomatik Test Üretimi ve Entegre Güvenlik Analizi
-- 🎨 **Sorunsuz Ön Yüz Geliştirme:**
-  - Kapsamlı Şablon ve Web3 Bileşen Kütüphanesi
-  - Duyarlı Tasarım Araçları
-  - Otomatik Kontrat ABI Algılama ve Gerçek Zamanlı Olay Yönetimi
-- 📦 **Merkezi Olmayan Varlık Yönetimi:**
-  - Tek Tıkla IPFS Yüklemeleri
-  - Varlıklar için Sürüm Kontrolü ve Erişim Yönetimi
-- 🚀 **Çoklu Zincir Dağıtımı ve Yayınlama:**
-  - EVM (Ethereum, Polygon, BSC, Avalanche) ve planlanan Solana desteği ile Tek Tıkla Dağıtım
-  - Ön yüzler için entegre Vercel ve Netlify dağıtımı
-  - Git Yönetimi (GitHub, GitLab, BitBucket entegrasyonu)
-- 📊 **Entegre İş Yönetimi Paketi:**
-  - **Analitik ve İçgörüler:** Kontrat kullanımını, kullanıcı etkileşimini, işlem metriklerini izleyin.
-  - **Tokenomics Stüdyosu:** Tokenları tasarlayın, yönetin ve analiz edin.
-  - **DAO Yönetişimi:** Teklifler, oylama ve topluluk yönetimi için çerçeve.
-  - **Uyumluluk ve Ortaklıklar:** Düzenleyici kontroller ve ortak entegrasyonları için araçlar.
-- 🤝 **Gerçek Zamanlı İşbirliği:**
-  - Google Docs benzeri ortak kod düzenleme
-  - Rol Tabanlı Erişim Kontrolü
-  - Entegre Proje Yönetimi (Toplantı koordinasyonu, Görev takibi)
+ChainLab addresses common challenges in Web3 development, such as fragmented tools, high technical barriers, and inefficient collaboration, by offering:
 
-## 🛠️ Teknoloji Yığını
+- **🧠 AI-Powered Smart Contract Development:**
+  - Browser-Based IDE (VS Code-like experience)
+  - Natural Language to Code Translation (DeepSeek, O1, Claude, custom models)
+  - Intelligent Debugging and Code Optimization
+  - Automated Test Generation and Integrated Security Analysis
+- 🎨 **Seamless Frontend Development:**
+  - Extensive Template and Web3 Component Library
+  - Responsive Design Tools
+  - Automatic Contract ABI Detection and Real-Time Event Handling
+- 📦 **Decentralized Asset Management:**
+  - One-Click IPFS Uploads
+  - Version Control and Access Management for Assets
+- 🚀 **Multi-Chain Deployment and Publishing:**
+  - One-Click Deployment to EVM (Ethereum, Polygon, BSC, Avalanche) and Solana support
+  - Integrated Vercel and Netlify deployment for frontends
+  - Git Management (GitHub, GitLab, BitBucket integration)
+- 📊 **Integrated Business Management Suite:**
+  - **Analytics & Insights:** Track contract usage, user engagement, and transaction metrics.
+  - **Tokenomics Studio:** Design, manage, and analyze tokens.
+  - **DAO Governance:** Framework for proposals, voting, and community management.
+  - **Compliance & Partnerships:** Tools for regulatory checks and partner integrations.
+- 🤝 **Real-Time Collaboration:**
+  - Google Docs-like collaborative code editing
+  - Role-Based Access Control
+  - Integrated Project Management (Meeting coordination, Task tracking)
 
-- **Ön Yüz:** Next.js (React) ile TypeScript
-- **UI Bileşenleri:** Başlıca ShadcnUI ve MUI
-- **Kod Editörü:** Monaco Editor (VS Code motoru)
-- **Gerçek Zamanlı Senkronizasyon:** Yjs + WebSocket
-- **Arka Uç ve Veritabanı:** SupaBase (PostgreSQL)
-- **Kimlik Doğrulama:** Güvenli Web3 cüzdan bağlantıları
-- **Dosya Depolama:** IPFS
-- **Geliştirme Ortamı:** WebContainer Teknolojisi
-- **AI Entegrasyonu:** Çoklu Büyük Dil Modeli (LLM) sağlayıcıları
+## 🛠️ Technology Stack
 
-## 🚀 Başlarken
+- **Frontend:** Next.js (React) with TypeScript
+- **UI Components:** MUI
+- **Code Editor:** Monaco Editor (VS Code engine)
+- **Real-Time Sync:** Yjs + WebSocket
+- **Backend & Database:** SupaBase (PostgreSQL)
+- **Authentication:** Secure Web3 wallet connections
+- **File Storage:** IPFS
+- **AI Integration:** Multiple Large Language Model (LLM) providers
 
-1.  **Ön Koşullar:**
+## 🗺️ Roadmap Highlights
 
-    - Node.js (v18 veya üstü önerilir)
-    - Yarn
+- **Near-Term (Q2 2025):** Core development features, frontend editor, enhanced AI and testing capabilities.
+- **Mid-Term (Q3 2025 - Q4 2025):** Expanded blockchain support, Tokenomics and Governance tools.
+- **Long-Term (Q1 2026 onwards):** Enterprise-grade security features, advanced analytics, mobile application.
 
-2.  **Depoyu klonlayın:**
+## 📄 License
 
-    ```bash
-    git clone https://github.com/dmrdvn/chainlabv2.git
-    ```
-
-3.  **Proje dizinine gidin:**
-
-    ```bash
-    cd chainlabv2
-    ```
-
-4.  **Bağımlılıkları yükleyin:**
-
-    ```bash
-    yarn install
-    ```
-
-5.  **Ortam değişkenlerinizi ayarlayın:**
-
-    - `.env.example` dosyasını `.env` olarak kopyalayın ve gerekli Supabase, Resend ve diğer hizmet kimlik bilgilerini girin.
-
-    ```bash
-    cp .env.example .env
-    ```
-
-    - _Not: Supabase örneğinizin yapılandırıldığından ve entegre hizmetler için API anahtarlarınızın olduğundan emin olun._
-
-6.  **Geliştirme sunucusunu çalıştırın:**
-    ```bash
-    yarn dev
-    ```
-    Tarayıcınızda [http://localhost:3000](http://localhost:3000) (veya yapılandırdığınız bağlantı noktası) adresini açın.
-
-## 🗺️ Yol Haritası Önemli Noktalar
-
-- **Yakın Vade (2025 2. Çeyrek):** Temel geliştirme özellikleri, ön yüz editörü, geliştirilmiş AI ve test yetenekleri.
-- **Orta Vade (2025 3. Çeyrek - 4. Çeyrek):** Genişletilmiş blok zinciri desteği (EVM/Solana ötesi), Tokenomics ve Yönetişim araçları.
-- **Uzun Vade (2026 1. Çeyrek ve sonrası):** Kurumsal düzeyde güvenlik özellikleri, gelişmiş analitikler, mobil uygulama.
-
-## 🤝 Katkıda Bulunma
-
-Katkılarınızı memnuniyetle karşılıyoruz! Nasıl dahil olabileceğiniz hakkında daha fazla ayrıntı için lütfen katkıda bulunma yönergelerimize (eklenecek) bakın.
-
-## 📄 Lisans
-
-Bu proje [MIT Lisansı](LICENSE.md) altında lisanslanmıştır.
+This project is licensed under the [MIT License](LICENSE.md).
