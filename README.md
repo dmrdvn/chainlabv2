@@ -1,6 +1,8 @@
 # ChainLab 🚀
 
 **Live Demo: [chainlab.dev](https://chainlab.dev)**
+**Whitepaper: [chainlab.dev/whitepaper.pdf](https://www.chainlab.dev/whitepaper.pdf)**
+**Presentation: [View on Canva](https://www.canva.com/design/DAGWvKUIklU/5Ep-f_gZkuSiYcHk8fOCPg/edit?utm_content=DAGWvKUIklU&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)**
 
 **ChainLab: AI-Powered Integrated Web3 Development Environment.**
 
