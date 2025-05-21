@@ -1,12 +1,15 @@
 'use client';
 
-import { ReactNode, useMemo } from 'react';
-import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider as SolanaWalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { ReactNode, useMemo, useCallback } from 'react';
 import {
-  PhantomWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
+  ConnectionProvider,
+  WalletProvider as SolanaWalletProvider,
+} from '@solana/wallet-adapter-react';
+import { WalletModalProvider as SolanaWalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { clusterApiUrl } from '@solana/web3.js';
+import { WalletError } from '@solana/wallet-adapter-base';
 
 // Default Solana RPC endpoint (you can make this configurable, e.g., via environment variables)
 const SOLANA_RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_ENDPOINT || clusterApiUrl('devnet');
@@ -16,19 +19,16 @@ interface SolanaWalletProvidersProps {
 }
 
 export function SolanaWalletProviders({ children }: SolanaWalletProvidersProps) {
-  const solanaWallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-    ],
-    [SOLANA_RPC_ENDPOINT] // Re-initialize if RPC endpoint changes, though typically it's static once app loads
-  );
+  const wallets = useMemo(() => [new BackpackWalletAdapter(), new SolflareWalletAdapter()], []);
+
+  const onError = useCallback((error: WalletError) => {
+    console.error('Solana Wallet Error:', error);
+  }, []);
 
   return (
     <ConnectionProvider endpoint={SOLANA_RPC_ENDPOINT}>
-      <SolanaWalletProvider wallets={solanaWallets} autoConnect>
-        <SolanaWalletModalProvider>
-          {children}
-        </SolanaWalletModalProvider>
+      <SolanaWalletProvider wallets={wallets} onError={onError} autoConnect>
+        <SolanaWalletModalProvider>{children}</SolanaWalletModalProvider>
       </SolanaWalletProvider>
     </ConnectionProvider>
   );

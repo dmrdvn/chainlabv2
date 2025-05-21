@@ -474,7 +474,7 @@ export async function getProjectSolanaProgramsAction(
       p_project_id: projectId,
     });
 
-    console.log('RPC (get_project_solana_programs) raw data:', data);
+    /* console.log('RPC (get_project_solana_programs) raw data:', data); */
 
     if (rpcError) {
       console.error('RPC error (get_project_solana_programs):', rpcError.message);
@@ -489,9 +489,9 @@ export async function getProjectSolanaProgramsAction(
     // Supabase RPC'leri json döndürdüğünde, data zaten parse edilmiş bir dizi olacaktır.
     const programs = (data || []) as ProjectHierarchyItem[];
 
-    console.log(
+    /*  console.log(
       `Solana programs fetched successfully for projectId: ${projectId}, items: ${programs.length}`
-    );
+    ); */
     return { success: true, data: programs, error: undefined };
   } catch (error: any) {
     console.error('Unexpected error in getProjectSolanaProgramsAction:', error);
@@ -537,8 +537,8 @@ export async function getProjectFrontends(projectId: string) {
       return null;
     }
 
-    console.log(`${data?.length || 0} frontend project(s) found`);
-    console.log('=== SERVER ACTION: getProjectFrontends completed successfully ===');
+    /* console.log(`${data?.length || 0} frontend project(s) found`); */
+    /* console.log('=== SERVER ACTION: getProjectFrontends completed successfully ==='); */
     return data || null;
   } catch (error) {
     console.error('Unexpected error getting frontend projects:', error);
@@ -869,6 +869,61 @@ export function subscribeToCompilationsByProject(
   // .subscribe() status listener'ı buradan kaldırıldı. Hook kendi status listener'ını kullanacak.
 
   return channel;
+}
+
+/**
+ * Retrieves all compilation records for a specific project from the 'compilations' table.
+ *
+ * @param projectId The ID of the project to fetch compilations for.
+ * @returns An ApiResponse containing the list of compilations.
+ */
+export async function getCompilationsByProjectAction(
+  projectId: string
+): Promise<ApiResponse<Compilation[]>> {
+  console.log(`=== ACTION: getCompilationsByProjectAction started for projectId: ${projectId} ===`);
+  try {
+    if (!projectId) {
+      return { success: false, error: 'Invalid project ID.', data: null };
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session) {
+      console.error('Session not found or error fetching session:', sessionError?.message);
+      return { success: false, error: 'Authentication required.', data: null };
+    }
+
+    const { data, error: dbError } = await supabase
+      .from('compilations')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('requested_at', { ascending: false }); // En son derlemeler üstte
+
+    if (dbError) {
+      console.error(
+        'Database error (getCompilationsByProjectAction):',
+        dbError.message,
+        dbError.details
+      );
+      return {
+        success: false,
+        error: dbError.message || 'Failed to fetch compilations.',
+        data: null,
+      };
+    }
+
+    console.log(
+      `Compilations fetched successfully for projectId: ${projectId}, count: ${data?.length || 0}`
+    );
+    console.log('=== ACTION: getCompilationsByProjectAction completed successfully ===');
+    return { success: true, data: (data as Compilation[]) || [], error: undefined };
+  } catch (error: any) {
+    console.error('Unexpected error in getCompilationsByProjectAction:', error);
+    return {
+      success: false,
+      error: error.message || 'An unexpected server error occurred while fetching compilations.',
+      data: null,
+    };
+  }
 }
 
 // --- End of Realtime Subscription for Compilations ---

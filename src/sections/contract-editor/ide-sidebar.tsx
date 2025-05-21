@@ -1,34 +1,44 @@
-import type { ProjectFile } from "src/types/project";
-import type { TreeItem2Props } from "@mui/x-tree-view/TreeItem2";
+import type { ProjectFile } from 'src/types/project';
+import type { TreeItem2Props } from '@mui/x-tree-view/TreeItem2';
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import Stack from "@mui/material/Stack";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
-import Typography from "@mui/material/Typography";
-import { TreeItem2 } from "@mui/x-tree-view/TreeItem2";
-import { treeItemClasses } from "@mui/x-tree-view/TreeItem";
-import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
-import { alpha, styled, useTheme } from "@mui/material/styles";
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import { TreeItem2 } from '@mui/x-tree-view/TreeItem2';
+import { treeItemClasses } from '@mui/x-tree-view/TreeItem';
+import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
+import { alpha, styled, useTheme } from '@mui/material/styles';
 
-import { getFileIconElement } from "src/utils/file-icons.utils";
-import { buildFileTree, type FileTreeNode } from "src/utils/build-file-tree";
+import { getFileIconElement } from 'src/utils/file-icons.utils';
+import { buildFileTree, type FileTreeNode } from 'src/utils/build-file-tree';
 
-import { Iconify } from "src/components/iconify";
-import { AnimateBorder } from "src/components/animate";
+import { Iconify } from 'src/components/iconify';
+import { AnimateBorder } from 'src/components/animate';
 
-import { useAuthContext } from "src/auth/hooks";
+import { useAuthContext } from 'src/auth/hooks';
 
-import { IdeDeploy } from "./ide-deploy";
-import { IdeCompiler } from "./ide-compiler";
-import { createSettingsFile } from "./ide-editor-area";
+import { IdeDeploy } from './ide-deploy';
+import { IdeCompiler } from './ide-compiler';
+import { createSettingsFile } from './ide-editor-area';
 
-import type { DeployedEvmContractInfo, DeployedSolanaProgramInfo } from "./ide-deploy";
-import type { ArtifactForDeploy, EvmCompilerSettings, SolanaCompilerSettings, SimplifiedCompilationData } from "./view/contract-editor-view";
+import type { DeployedEvmContractInfo, DeployedSolanaProgramInfo } from './ide-deploy';
+import type {
+  ArtifactForDeploy,
+  EvmCompilerSettings,
+  SolanaCompilerSettings,
+  SimplifiedCompilationData,
+} from './view/contract-editor-view';
+
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { getProjectFile } from 'src/actions/project';
 
 interface IdeSidebarProps {
   activeView: string;
@@ -37,7 +47,7 @@ interface IdeSidebarProps {
   isLoading: boolean;
   onSettingsClick?: () => void;
   onOpenSettingsPanel?: () => void;
-  platform?: "evm" | "solana" | null;
+  platform?: 'evm' | 'solana' | null;
   onCompileEvm: (settings: EvmCompilerSettings) => Promise<void>;
   onCompileSolana: (settings: SolanaCompilerSettings) => Promise<void>;
   isCompiling: boolean;
@@ -63,6 +73,7 @@ interface IdeSidebarProps {
   expandedSolanaAccordion: string | false;
   onSolanaAccordionChange: (panel: string, isExpanded: boolean) => void;
   compiledArtifactsForDeploy?: ArtifactForDeploy[];
+  projectName?: string;
 }
 
 const StyledTreeItem = styled((props: TreeItem2Props) => {
@@ -71,33 +82,26 @@ const StyledTreeItem = styled((props: TreeItem2Props) => {
     sx: { width: 15, height: 15, mr: 0.5 },
   });
 
-  return (
-    <TreeItem2
-      itemId={itemId}
-      label={label}
-      slots={{ icon: () => iconElement }}
-      {...other}
-    />
-  );
+  return <TreeItem2 itemId={itemId} label={label} slots={{ icon: () => iconElement }} {...other} />;
 })(({ theme }) => ({
   [`& .${treeItemClasses.content}`]: {
     borderRadius: theme.spacing(0.5),
     paddingTop: theme.spacing(0.25),
     paddingBottom: theme.spacing(0.25),
-    "&:hover": {
+    '&:hover': {
       backgroundColor: theme.palette.action.hover,
     },
-    "&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused": {
+    '&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused': {
       backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: "var(--tree-view-color)",
+      color: 'var(--tree-view-color)',
     },
   },
   [`& .${treeItemClasses.iconContainer}`]: {
     marginRight: theme.spacing(0),
   },
   [`& .${treeItemClasses.label}`]: {
-    fontWeight: "inherit",
-    color: "inherit",
+    fontWeight: 'inherit',
+    color: 'inherit',
     paddingLeft: theme.spacing(0),
     fontSize: `calc(${theme.typography.caption.fontSize} + 2px)`,
   },
@@ -125,11 +129,62 @@ export default function IdeSidebar({
   expandedSolanaAccordion,
   onSolanaAccordionChange,
   compiledArtifactsForDeploy,
+  projectName,
 }: IdeSidebarProps) {
   const theme = useTheme();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const { user } = useAuthContext();
+
+  const handleDownloadProject = async () => {
+    if (!files || files.length === 0) {
+      alert('No files available to download.');
+      return;
+    }
+
+    const zip = new JSZip();
+    const projectFolderName = 'project-files';
+    const projectFolder = zip.folder(projectFolderName);
+
+    if (!projectFolder) {
+      alert('Error creating project archive.');
+      return;
+    }
+
+    let filesProcessed = 0;
+
+    for (const file of files) {
+      if (!file.is_directory) {
+        try {
+          const fileDataWithContent = await getProjectFile(file.id);
+          const content = fileDataWithContent?.content || '';
+
+          let relativePath = file.file_path;
+          if (relativePath.startsWith('/')) {
+            relativePath = relativePath.substring(1);
+          }
+
+          projectFolder.file(relativePath, content);
+          filesProcessed++;
+        } catch (error) {
+          console.error(`Error fetching content for file ${file.file_path}:`, error);
+        }
+      }
+    }
+
+    if (filesProcessed === 0 && files.some((f) => !f.is_directory)) {
+      alert('No file contents could be processed for download.');
+      return;
+    }
+
+    try {
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, `${projectFolderName}.zip`);
+    } catch (error) {
+      console.error('Error generating zip file:', error);
+      alert('Error generating project archive.');
+    }
+  };
 
   const fileTree = useMemo(() => {
     if (isLoading || !files || files.length === 0) {
@@ -140,18 +195,18 @@ export default function IdeSidebar({
     if (
       Array.isArray(rawBuiltTree) &&
       rawBuiltTree.length === 1 &&
-      rawBuiltTree[0].id === "" &&
-      rawBuiltTree[0].name === ""
+      rawBuiltTree[0].id === '' &&
+      rawBuiltTree[0].name === ''
     ) {
       console.log(
-        "IdeSidebar: Using children of artificial root for display:",
-        rawBuiltTree[0].children,
+        'IdeSidebar: Using children of artificial root for display:',
+        rawBuiltTree[0].children
       );
       return rawBuiltTree[0].children || [];
     }
     console.warn(
-      "IdeSidebar: buildFileTree did not return expected artificial root. Using raw tree:",
-      rawBuiltTree,
+      'IdeSidebar: buildFileTree did not return expected artificial root. Using raw tree:',
+      rawBuiltTree
     );
     return rawBuiltTree;
   }, [files, isLoading]);
@@ -162,45 +217,30 @@ export default function IdeSidebar({
     }
   }, [files, isLoading]);
 
-  const handleToggle = useCallback(
-    (event: React.SyntheticEvent, nodeIds: string[]) => {
-      setExpanded(nodeIds);
-    },
-    [],
-  );
+  const handleToggle = useCallback((event: React.SyntheticEvent, nodeIds: string[]) => {
+    setExpanded(nodeIds);
+  }, []);
 
   const handleSelect = useCallback(
     (event: React.SyntheticEvent, itemId: string | null) => {
       setSelected(itemId);
 
       if (itemId && files) {
-        /* console.log(`[IdeSidebar] handleSelect: itemId='${itemId}'`); */
-        const selectedFileNode = files.find(
-          (file) => {
-            const normalizedPath = file.file_path.startsWith("/")
-              ? file.file_path.substring(1)
-              : file.file_path;
-            // console.log(`[IdeSidebar] Comparing: '${normalizedPath}' with '${itemId}' for file: ${file.file_name}`);
-            return normalizedPath === itemId;
-          },
-        );
+        const selectedFileNode = files.find((file) => {
+          const normalizedPath = file.file_path.startsWith('/')
+            ? file.file_path.substring(1)
+            : file.file_path;
+          return normalizedPath === itemId;
+        });
 
         if (selectedFileNode) {
-          /*  console.log(`[IdeSidebar] Found potential file in 'files' list:`, JSON.stringify(selectedFileNode, null, 2)); */
           if (!selectedFileNode.is_directory) {
-            /* console.log('[IdeSidebar] Confirmed as file, calling onFileSelect for:', selectedFileNode.file_name); */
             onFileSelect(selectedFileNode);
-          } else {
-            /* console.log(`[IdeSidebar] Item '${itemId}' (filename: ${selectedFileNode.file_name}) is a directory. Not opening.`); */
           }
-        } else {
-          /* console.log(`[IdeSidebar] Item '${itemId}' NOT FOUND in 'files' list after normalization.`); */
         }
-      } else if (itemId) {
-        /* console.log(`[IdeSidebar] handleSelect: itemId='${itemId}' but 'files' is null or empty.`); */
       }
     },
-    [files, onFileSelect],
+    [files, onFileSelect]
   );
 
   const getItemLabel = useCallback((item: FileTreeNode) => item.name, []);
@@ -223,45 +263,52 @@ export default function IdeSidebar({
       sx={{
         width: 220,
         flexShrink: 0,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
         borderRight: `1px solid ${theme.palette.divider}`,
-        bgcolor: "background.paper",
-        overflow: "hidden",
+        bgcolor: 'background.paper',
+        overflow: 'hidden',
       }}
     >
       {/* Explorer View */}
-      {activeView === "explorer" && (
+      {activeView === 'explorer' && (
         <>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
+              justifyContent: 'space-between',
             }}
           >
-            <Iconify
-              icon="solar:folder-open-bold"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
+            <Stack direction="row" alignItems="center">
+              <Iconify icon="solar:folder-open-bold" sx={{ mr: 1, width: 18, height: 18 }} />
+              <Typography
+                variant="subtitle1"
+                sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}
+              >
+                Explorer
+              </Typography>
+            </Stack>
+            <IconButton
+              onClick={handleDownloadProject}
+              size="small"
+              title="Download Project as ZIP"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { backgroundColor: alpha(theme.palette.action.active, 0.1) },
+              }}
             >
-              Explorer
-            </Typography>
+              <Iconify icon="mdi:download-box-outline" />
+            </IconButton>
           </Box>
           <Divider />
-          <Box
-            sx={{ flexGrow: 1, overflowY: "auto", overflowX: "hidden", p: 2 }}
-          >
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden', p: 2 }}>
             {isLoading ? (
-              <Typography sx={{ p: 2, color: "text.secondary" }}>
-                Loading files...
-              </Typography>
+              <Typography sx={{ p: 2, color: 'text.secondary' }}>Loading files...</Typography>
             ) : fileTree.length > 0 ? (
               <RichTreeView
                 items={fileTree}
@@ -280,141 +327,121 @@ export default function IdeSidebar({
                 }}
               />
             ) : (
-              <Typography sx={{ p: 2, color: "text.secondary" }}>
-                No files found.
-              </Typography>
+              <Typography sx={{ p: 2, color: 'text.secondary' }}>No files found.</Typography>
             )}
           </Box>
         </>
       )}
       {/* Search View */}
-      {activeView === "search" && (
+      {activeView === 'search' && (
         <>
           {/* Header for Search */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
             <Iconify icon="mdi:magnify" sx={{ mr: 1, width: 18, height: 18 }} />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Search
             </Typography>
           </Box>
           <Divider />
           {/* Content for Search */}
           <Box sx={{ p: 2 }}>
-            <Typography sx={{ color: "text.secondary" }}>
+            <Typography sx={{ color: 'text.secondary' }}>
               Search functionality coming soon...
             </Typography>
           </Box>
         </>
       )}
       {/* Source Control View */}
-      {activeView === "source_control" && (
+      {activeView === 'source_control' && (
         <>
           {/* Header for Source Control */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:source-branch"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:source-branch" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Source Control
             </Typography>
           </Box>
           <Divider />
           {/* Content for Source Control */}
           <Box sx={{ p: 2 }}>
-            <Typography sx={{ color: "text.secondary" }}>
+            <Typography sx={{ color: 'text.secondary' }}>
               Source control integration coming soon...
             </Typography>
           </Box>
         </>
       )}
       {/* Debug View */}
-      {activeView === "debug" && (
+      {activeView === 'debug' && (
         <>
           {/* Header for Debug */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:bug-outline"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:bug-outline" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Debug
             </Typography>
           </Box>
           <Divider />
           {/* Content for Debug */}
           <Box sx={{ p: 2 }}>
-            <Typography sx={{ color: "text.secondary" }}>
-              Debugging tools coming soon...
-            </Typography>
+            <Typography sx={{ color: 'text.secondary' }}>Debugging tools coming soon...</Typography>
           </Box>
         </>
       )}
 
       {/* Compiler View */}
-      {activeView === "compiler" && (
+      {activeView === 'compiler' && (
         <>
           {/* Header for Compiler */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:play-circle-outline"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:play-circle-outline" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Compiler
             </Typography>
           </Box>
           <Divider />
           {/* Content for Compiler */}
-          <Box sx={{ p: 0, overflowY: "auto",
-        scrollbarWidth: "1px",
-        scrollbarColor: "transparent transparent", }}>
-            <IdeCompiler 
-              platform={platform || null} 
+          <Box
+            sx={{
+              p: 0,
+              overflowY: 'auto',
+              scrollbarWidth: '1px',
+              scrollbarColor: 'transparent transparent',
+            }}
+          >
+            <IdeCompiler
+              platform={platform || null}
               onCompileEvm={onCompileEvm}
               onCompileSolana={onCompileSolana}
               isCompiling={isCompiling}
@@ -424,36 +451,35 @@ export default function IdeSidebar({
         </>
       )}
       {/* Deploy View */}
-      {activeView === "deploy" && (
+      {activeView === 'deploy' && (
         <>
           {/* Header for Deploy */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:cloud-upload-outline"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:cloud-upload-outline" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Deploy & Run
             </Typography>
           </Box>
           <Divider />
           {/* Content for Deploy */}
-          <Box sx={{ p: 0, overflowY: "auto",
-        scrollbarWidth: "1px",
-        scrollbarColor: "transparent transparent", }}>
-            <IdeDeploy 
-              platform={platform || null} 
+          <Box
+            sx={{
+              p: 0,
+              overflowY: 'auto',
+              scrollbarWidth: '1px',
+              scrollbarColor: 'transparent transparent',
+            }}
+          >
+            <IdeDeploy
+              platform={platform || null}
               onDeployEvm={onDeployEvm}
               onDeploySolana={onDeploySolana}
               isDeploying={isDeploying}
@@ -469,65 +495,51 @@ export default function IdeSidebar({
         </>
       )}
       {/* Extensions View */}
-      {activeView === "extensions" && (
+      {activeView === 'extensions' && (
         <>
           {/* Header for Extensions */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:puzzle-outline"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:puzzle-outline" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Extensions
             </Typography>
           </Box>
           <Divider />
           {/* Content for Extensions */}
           <Box sx={{ p: 2 }}>
-            <Typography sx={{ color: "text.secondary" }}>
-              Manage extensions soon...
-            </Typography>
+            <Typography sx={{ color: 'text.secondary' }}>Manage extensions soon...</Typography>
           </Box>
         </>
       )}
       {/* Settings View */}
-      {activeView === "settings" && (
+      {activeView === 'settings' && (
         <>
           {/* Header for Settings */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               bgcolor: theme.palette.action.hover,
               px: 2,
               py: 1,
             }}
           >
-            <Iconify
-              icon="mdi:cog-outline"
-              sx={{ mr: 1, width: 18, height: 18 }}
-            />
-            <Typography
-              variant="subtitle1"
-              sx={{ textTransform: "uppercase", fontWeight: "bold" }}
-            >
+            <Iconify icon="mdi:cog-outline" sx={{ mr: 1, width: 18, height: 18 }} />
+            <Typography variant="subtitle1" sx={{ textTransform: 'uppercase', fontWeight: 'bold' }}>
               Settings
             </Typography>
           </Box>
           <Divider />
           {/* Content for Settings with profile information */}
-          <Box sx={{ flexGrow: 1, p: 2, overflowY: "auto" }}>
+          <Box sx={{ flexGrow: 1, p: 2, overflowY: 'auto' }}>
             {/* User Profile Card - only show if user is logged in */}
             {user && (
               <Card
@@ -543,15 +555,15 @@ export default function IdeSidebar({
                 <Stack spacing={1} alignItems="center">
                   <AnimateBorder
                     sx={{
-                      p: "6px",
+                      p: '6px',
                       width: 96,
                       height: 96,
-                      borderRadius: "50%",
+                      borderRadius: '50%',
                     }}
                     slotProps={{
                       primaryBorder: {
                         size: 120,
-                        sx: { color: "primary.main" },
+                        sx: { color: 'primary.main' },
                       },
                     }}
                   >
@@ -565,15 +577,11 @@ export default function IdeSidebar({
                       </Typography>
                     </Avatar>
                   </AnimateBorder>
-                  <Box sx={{ textAlign: "center" }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                       {user?.displayName}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 0.5 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                       {user?.email}
                     </Typography>
                     <Typography
@@ -584,7 +592,7 @@ export default function IdeSidebar({
                         bgcolor: alpha(theme.palette.primary.main, 0.1),
                         borderRadius: 10,
                         color: theme.palette.primary.main,
-                        fontWeight: "medium",
+                        fontWeight: 'medium',
                       }}
                     >
                       Developer
@@ -600,10 +608,10 @@ export default function IdeSidebar({
                 <Typography
                   variant="overline"
                   sx={{
-                    display: "block",
+                    display: 'block',
                     mb: 1,
-                    color: "text.secondary",
-                    fontWeight: "bold",
+                    color: 'text.secondary',
+                    fontWeight: 'bold',
                   }}
                 >
                   Account
@@ -613,11 +621,11 @@ export default function IdeSidebar({
                     fullWidth
                     startIcon={<Iconify icon="mdi:account-edit-outline" />}
                     sx={{
-                      justifyContent: "flex-start",
+                      justifyContent: 'flex-start',
                       px: 2,
-                      fontWeight: "normal",
-                      color: "text.primary",
-                      "&:hover": {
+                      fontWeight: 'normal',
+                      color: 'text.primary',
+                      '&:hover': {
                         bgcolor: alpha(theme.palette.primary.main, 0.08),
                       },
                     }}
@@ -628,11 +636,11 @@ export default function IdeSidebar({
                     fullWidth
                     startIcon={<Iconify icon="mdi:account-details-outline" />}
                     sx={{
-                      justifyContent: "flex-start",
+                      justifyContent: 'flex-start',
                       px: 2,
-                      fontWeight: "normal",
-                      color: "text.primary",
-                      "&:hover": {
+                      fontWeight: 'normal',
+                      color: 'text.primary',
+                      '&:hover': {
                         bgcolor: alpha(theme.palette.primary.main, 0.08),
                       },
                     }}
@@ -648,10 +656,10 @@ export default function IdeSidebar({
               <Typography
                 variant="overline"
                 sx={{
-                  display: "block",
+                  display: 'block',
                   mb: 1,
-                  color: "text.secondary",
-                  fontWeight: "bold",
+                  color: 'text.secondary',
+                  fontWeight: 'bold',
                 }}
               >
                 Settings
@@ -663,7 +671,7 @@ export default function IdeSidebar({
                 startIcon={<Iconify icon="mdi:cog-outline" />}
                 onClick={handleSettingsClick}
                 sx={{
-                  textTransform: "none",
+                  textTransform: 'none',
                   fontWeight: 500,
                   boxShadow: 2,
                 }}
@@ -677,10 +685,10 @@ export default function IdeSidebar({
               <Typography
                 variant="overline"
                 sx={{
-                  display: "block",
+                  display: 'block',
                   mb: 1,
-                  color: "text.secondary",
-                  fontWeight: "bold",
+                  color: 'text.secondary',
+                  fontWeight: 'bold',
                 }}
               >
                 Integrations
@@ -690,11 +698,11 @@ export default function IdeSidebar({
                   fullWidth
                   startIcon={<Iconify icon="mdi:code-braces" />}
                   sx={{
-                    justifyContent: "flex-start",
+                    justifyContent: 'flex-start',
                     px: 2,
-                    fontWeight: "normal",
-                    color: "text.primary",
-                    "&:hover": {
+                    fontWeight: 'normal',
+                    color: 'text.primary',
+                    '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.08),
                     },
                   }}
@@ -705,11 +713,11 @@ export default function IdeSidebar({
                   fullWidth
                   startIcon={<Iconify icon="mdi:api" />}
                   sx={{
-                    justifyContent: "flex-start",
+                    justifyContent: 'flex-start',
                     px: 2,
-                    fontWeight: "normal",
-                    color: "text.primary",
-                    "&:hover": {
+                    fontWeight: 'normal',
+                    color: 'text.primary',
+                    '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.08),
                     },
                   }}

@@ -7,9 +7,12 @@ import useSWR, { useSWRConfig } from 'swr';
 import {
   getProjectHierarchyAction,
   getProjectFile,
-  getProjectFrontends
+  getProjectFrontends,
 } from 'src/actions/project';
-import { getProjectEvmContractsAction, getProjectSolanaProgramsAction} from 'src/actions/project/resources';
+import {
+  getProjectEvmContractsAction,
+  getProjectSolanaProgramsAction,
+} from 'src/actions/project/resources';
 import { useMemo, useEffect } from 'react';
 import { useProjectById } from './use-project-queries';
 
@@ -35,13 +38,12 @@ export function useProjectFileHierarchy(projectId: string | null) {
     return response.data;
   };
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ProjectHierarchyItem[] | null, Error>(
-    key,
-    fetchProjectHierarchy,
-    {
-      keepPreviousData: true,
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    ProjectHierarchyItem[] | null,
+    Error
+  >(key, fetchProjectHierarchy, {
+    keepPreviousData: true,
+  });
 
   return {
     hierarchy: data,
@@ -125,13 +127,12 @@ export function useProjectEvmContracts(projectId: string | null) {
     return response.data;
   };
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ProjectHierarchyItem[] | null, Error>(
-    key,
-    fetchEvmContracts,
-    {
-      keepPreviousData: true, // İsteğe bağlı
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    ProjectHierarchyItem[] | null,
+    Error
+  >(key, fetchEvmContracts, {
+    keepPreviousData: true, // İsteğe bağlı
+  });
 
   return {
     evmContracts: data,
@@ -153,7 +154,9 @@ export function useProjectEvmContracts(projectId: string | null) {
 export function useProjectSolanaPrograms(projectId: string | null) {
   const key = projectId ? ['projectSolanaPrograms', projectId] : null;
 
-  const fetchSolanaPrograms = async ([_, pId]: [string, string]): Promise<ProjectHierarchyItem[]> => {
+  const fetchSolanaPrograms = async ([_, pId]: [string, string]): Promise<
+    ProjectHierarchyItem[]
+  > => {
     const response = await getProjectSolanaProgramsAction(pId);
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch Solana programs');
@@ -161,13 +164,12 @@ export function useProjectSolanaPrograms(projectId: string | null) {
     return response.data;
   };
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<ProjectHierarchyItem[] | null, Error>(
-    key,
-    fetchSolanaPrograms,
-    {
-      keepPreviousData: true, // İsteğe bağlı
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    ProjectHierarchyItem[] | null,
+    Error
+  >(key, fetchSolanaPrograms, {
+    keepPreviousData: true, // İsteğe bağlı
+  });
 
   return {
     solanaPrograms: data,
@@ -178,7 +180,6 @@ export function useProjectSolanaPrograms(projectId: string | null) {
   };
 }
 
-
 export function useProjectFrontends(projectId: string | null) {
   const { mutate: globalMutate } = useSWRConfig();
 
@@ -187,13 +188,13 @@ export function useProjectFrontends(projectId: string | null) {
     async () => {
       try {
         if (!projectId) {
-          console.log('useProjectFrontends: projectId boş, boş dizi dönülüyor');
+          /* console.log('useProjectFrontends: projectId boş, boş dizi dönülüyor'); */
           return [];
         }
 
-        console.log('useProjectFrontends: Frontendler çekiliyor, projectId:', projectId);
+        /* console.log('useProjectFrontends: Frontendler çekiliyor, projectId:', projectId); */
         const frontends = await getProjectFrontends(projectId);
-        console.log('useProjectFrontends: Frontendler başarıyla alındı:', frontends);
+        /* console.log('useProjectFrontends: Frontendler başarıyla alındı:', frontends); */
         return frontends;
       } catch (err) {
         console.error('useProjectFrontends: Frontendler alınırken hata:', err);

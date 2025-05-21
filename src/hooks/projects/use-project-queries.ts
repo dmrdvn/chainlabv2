@@ -78,7 +78,7 @@ export function useProjectDetails(projectId: string | null) {
       try {
         if (!projectId) return null;
 
-        console.log(`Fetching project details for ID: ${projectId}`);
+        /* console.log(`Fetching project details for ID: ${projectId}`); */
         const project = await getProjectById(projectId);
 
         if (!project) {
@@ -183,11 +183,14 @@ export function useProjectMembers(projectId: string | null) {
       try {
         if (!projectId) return [];
 
-        console.log(`Fetching collaborators for project ID: ${projectId}`);
+        /* console.log(`Fetching collaborators for project ID: ${projectId}`); */
         const collaborators = await getProjectMembers(projectId);
 
         if (!Array.isArray(collaborators)) {
-          console.warn(`Invalid collaborators data format for project ID ${projectId}:`, collaborators);
+          console.warn(
+            `Invalid collaborators data format for project ID ${projectId}:`,
+            collaborators
+          );
           return [];
         }
 
@@ -251,24 +254,26 @@ export function useProjectMembers(projectId: string | null) {
       if (!userIdOrEmail || !permission || collaborators.length === 0) return false;
 
       const collaborator = collaborators.find((c) =>
-        c.collaborator_type === 'member'
-          ? c.user_id === userIdOrEmail
-          : c.email === userIdOrEmail
+        c.collaborator_type === 'member' ? c.user_id === userIdOrEmail : c.email === userIdOrEmail
       );
 
       if (!collaborator) return false;
 
       // Sahipse her zaman izinli
-      if (collaborator.user_id && collaborator.user_id === currentUserId && isCurrentUserProjectOwner) {
+      if (
+        collaborator.user_id &&
+        collaborator.user_id === currentUserId &&
+        isCurrentUserProjectOwner
+      ) {
         return true;
       }
 
       // Sadece üyelerin izinleri olabilir ve 'all_permissions' alanı gerekli
       if (collaborator.collaborator_type === 'member' && collaborator.user_id) {
-         // RPC'nin all_permissions döndürdüğünü varsayıyoruz.
-         const permissions = collaborator.all_permissions;
-         if (!permissions || !Array.isArray(permissions)) return false;
-         return permissions.includes(permission);
+        // RPC'nin all_permissions döndürdüğünü varsayıyoruz.
+        const permissions = collaborator.all_permissions;
+        if (!permissions || !Array.isArray(permissions)) return false;
+        return permissions.includes(permission);
       }
 
       // Bekleyen davetlerin izni olmaz
@@ -279,32 +284,34 @@ export function useProjectMembers(projectId: string | null) {
 
   const hasAnyPermission = useCallback(
     (userIdOrEmail: string, permissionList: string[]): boolean => {
-       if (!userIdOrEmail || !permissionList.length || collaborators.length === 0) return false;
+      if (!userIdOrEmail || !permissionList.length || collaborators.length === 0) return false;
 
-        const collaborator = collaborators.find((c) =>
-            c.collaborator_type === 'member'
-            ? c.user_id === userIdOrEmail
-            : c.email === userIdOrEmail
-        );
+      const collaborator = collaborators.find((c) =>
+        c.collaborator_type === 'member' ? c.user_id === userIdOrEmail : c.email === userIdOrEmail
+      );
 
-        if (!collaborator) return false;
+      if (!collaborator) return false;
 
-        // Sahipse her zaman izinli
-        if (collaborator.user_id && collaborator.user_id === currentUserId && isCurrentUserProjectOwner) {
-            return true;
-        }
+      // Sahipse her zaman izinli
+      if (
+        collaborator.user_id &&
+        collaborator.user_id === currentUserId &&
+        isCurrentUserProjectOwner
+      ) {
+        return true;
+      }
 
-        // Sadece üyelerin izinleri olabilir ve 'all_permissions' alanı gerekli
-        if (collaborator.collaborator_type === 'member' && collaborator.user_id) {
-            // RPC'nin all_permissions döndürdüğünü varsayıyoruz.
-            const permissions = collaborator.all_permissions;
-            if (!permissions || !Array.isArray(permissions)) return false;
+      // Sadece üyelerin izinleri olabilir ve 'all_permissions' alanı gerekli
+      if (collaborator.collaborator_type === 'member' && collaborator.user_id) {
+        // RPC'nin all_permissions döndürdüğünü varsayıyoruz.
+        const permissions = collaborator.all_permissions;
+        if (!permissions || !Array.isArray(permissions)) return false;
 
-            return permissionList.some((p) => permissions.includes(p));
-        }
+        return permissionList.some((p) => permissions.includes(p));
+      }
 
-        // Bekleyen davetlerin izni olmaz
-        return false;
+      // Bekleyen davetlerin izni olmaz
+      return false;
     },
     [collaborators, currentUserId, isCurrentUserProjectOwner]
   );
@@ -470,18 +477,24 @@ export function useProjectById(projectId: string | null) {
       } else {
         // Direct Project object (or null/undefined)
         // Check for essential properties of Project to be safer, or assume it's Project | null
-        if (response.id && response.name) { // Basic check for Project-like structure
-            console.warn('getProjectById returned a direct object, not ApiResponse. Casting directly.');
-            return response as Project;
+        if (response.id && response.name) {
+          // Basic check for Project-like structure
+          console.warn(
+            'getProjectById returned a direct object, not ApiResponse. Casting directly.'
+          );
+          return response as Project;
         } else if (response === null) {
-            return null;
+          return null;
         }
         // If it's an object but not ApiResponse and not clearly a Project, it's an issue
-        console.error('Invalid or unexpected response structure from getProjectById (not ApiResponse and not Project):', response);
+        console.error(
+          'Invalid or unexpected response structure from getProjectById (not ApiResponse and not Project):',
+          response
+        );
         throw new Error('Invalid or unexpected response structure from getProjectById.');
       }
     }
-    
+
     // Fallback for null or non-object response
     console.error('Invalid response structure from getProjectById (null or not an object)');
     throw new Error('Invalid response structure from getProjectById.');

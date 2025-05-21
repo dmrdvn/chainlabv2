@@ -107,7 +107,7 @@ export function ProjectsDetailsContent({ project, owner, ownerLoading, sx, ...ot
       <Stack sx={{ p: 2 }} alignItems="center">
         <Avatar
           alt={project?.name || 'P'}
-          src={project?.logo_url ? project.logo_url : '/assets/images/avatar/avatar_25.jpg'}
+          src={project?.logo_url ? project.logo_url : ''}
           variant="rounded"
           sx={{
             width: '100%',

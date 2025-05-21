@@ -21,7 +21,8 @@ import {
   deleteProjectItemAction,
   createNewEvmContractFilesAction,
   createNewSolanaProgramFilesAction,
-  requestCompilationAction
+  requestCompilationAction,
+  getCompilationsByProjectAction,
 } from 'src/actions/project';
 import {
   type UpdateFileContentActionPayload,
@@ -36,7 +37,7 @@ import {
   type RequestCompilationPayload,
   type RequestCompilationResponse,
   type Compilation,
-  subscribeToCompilationsByProject
+  subscribeToCompilationsByProject,
 } from 'src/actions/project/resources';
 
 /**
@@ -231,7 +232,13 @@ export function useUpdateProjectFileContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleUpdateFile = async ({ fileId, newContent }: { fileId: string; newContent: string }) => {
+  const handleUpdateFile = async ({
+    fileId,
+    newContent,
+  }: {
+    fileId: string;
+    newContent: string;
+  }) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -243,13 +250,12 @@ export function useUpdateProjectFileContent() {
 
       setIsLoading(false);
       return result;
-
     } catch (err: any) {
       const errorMessage = err?.message || 'An error occurred while updating the file content';
       setError(errorMessage);
       console.error('File content update error:', err);
       setIsLoading(false);
-      return { success: false, message: errorMessage }; 
+      return { success: false, message: errorMessage };
     }
   };
 
@@ -305,17 +311,30 @@ export function useCreateProjectFile() {
   const [error, setError] = useState<string | null>(null);
 
   // Define a more specific return type for the hook
-  type CreateFileResult = { file_id: string; file_name: string; file_path: string; project_id: string };
+  type CreateFileResult = {
+    file_id: string;
+    file_name: string;
+    file_path: string;
+    project_id: string;
+  };
 
-  const handleCreateFile = async (payload: CreateProjectFileActionPayload): Promise<CreateFileResult | null> => {
+  const handleCreateFile = async (
+    payload: CreateProjectFileActionPayload
+  ): Promise<CreateFileResult | null> => {
     setIsLoading(true);
     setError(null);
     try {
       const result = await createProjectFileAction(payload); // This returns ApiResponse<{ file_id: string }>
-      
+
       let createdFileId: string | null = null;
 
-      if (result && typeof result === 'object' && 'success' in result && result.success && result.data) {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'success' in result &&
+        result.success &&
+        result.data
+      ) {
         createdFileId = result.data.file_id;
       } else if (result && 'error' in result && result.error) {
         throw new Error(result.error as string);
@@ -330,19 +349,19 @@ export function useCreateProjectFile() {
       if (payload.projectId) {
         mutate(['projectFileHierarchy', payload.projectId]);
       }
-      
+
       // Construct the result object using payload and the returned file_id
       // The payload should contain filePath which includes the fileName.
       // We need to ensure CreateProjectFileActionPayload has 'filePath' which includes the full path.
       // Let's assume payload.filePath is the full path, and we can extract fileName from it if needed or it's directly available.
       // For simplicity, if CreateProjectFileActionPayload has 'fileName' and 'filePath' (or just 'filePath' from which name can be derived)
-      
+
       // Assuming CreateFilePayload (aliased as CreateProjectFileActionPayload) has `filePath` and `projectId`
       // And `fileName` is part of `filePath` or available in payload.
       // The actual `filePath` for the new file comes from `payload.filePath` used in `createProjectFileAction`.
       // The `fileName` can be extracted or is directly part of the payload.
       // For now, assuming payload has `fileName` and `filePath` which seems to be `CreateFilePayload` structure.
-      
+
       // Rechecking CreateFilePayload in resources.ts: { projectId: string; filePath: string; content?: string }
       // We need to extract fileName from payload.filePath
       const fileName = payload.filePath.split('/').pop() || 'unknown_file';
@@ -379,15 +398,22 @@ export function useCreateProjectDirectory() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  type CreateDirectoryResult = { directory_id: string; directory_name: string; directory_path: string; project_id: string };
+  type CreateDirectoryResult = {
+    directory_id: string;
+    directory_name: string;
+    directory_path: string;
+    project_id: string;
+  };
 
-  const handleCreateDirectory = async (payload: CreateProjectDirectoryActionPayload): Promise<CreateDirectoryResult | null> => {
+  const handleCreateDirectory = async (
+    payload: CreateProjectDirectoryActionPayload
+  ): Promise<CreateDirectoryResult | null> => {
     setIsLoading(true);
     setError(null);
     try {
       // createProjectDirectoryAction returns ApiResponse<{ directory_id: string }>
       const result = await createProjectDirectoryAction(payload);
-      
+
       let createdDirId: string | null = null;
       if (result && result.success && result.data) {
         createdDirId = result.data.directory_id;
@@ -457,7 +483,7 @@ export function useRenameProjectItem() {
         // e.g., if cache key includes file path/name.
         // For simplicity, we are not handling granular cache updates here beyond hierarchy.
       }
-      
+
       const oldName = payload.currentPath.split('/').pop();
       const newName = payload.newPath.split('/').pop();
       toast.success(`Item '${oldName}' renamed to '${newName}' successfully!`);
@@ -548,15 +574,17 @@ export function useCreateEvmContractFiles() {
       if (payload.projectId) {
         await mutate(['projectFileHierarchy', payload.projectId]);
         await mutate(['projectEvmContracts', payload.projectId]);
-        console.log(`useCreateEvmContractFiles: Mutated SWR cache for projectFileHierarchy and projectEvmContracts: ${payload.projectId}`);
+        console.log(
+          `useCreateEvmContractFiles: Mutated SWR cache for projectFileHierarchy and projectEvmContracts: ${payload.projectId}`
+        );
       }
-      
+
       toast.success(`Contract files for '${payload.contractName}' created successfully!`);
       console.log('useCreateEvmContractFiles: Files created successfully:', result.data);
       return result.data;
-
     } catch (err: any) {
-      const errorMessage = err?.message || 'An unexpected error occurred while creating EVM contract files.';
+      const errorMessage =
+        err?.message || 'An unexpected error occurred while creating EVM contract files.';
       setError(errorMessage);
       toast.error(errorMessage);
       console.error('useCreateEvmContractFiles: Catch block error:', err);
@@ -595,15 +623,17 @@ export function useCreateSolanaProgramFiles() {
 
       if (payload.projectId) {
         await mutate(['projectFileHierarchy', payload.projectId]);
-        console.log(`useCreateSolanaProgramFiles: Mutated SWR cache for projectFileHierarchy: ${payload.projectId}`);
+        console.log(
+          `useCreateSolanaProgramFiles: Mutated SWR cache for projectFileHierarchy: ${payload.projectId}`
+        );
       }
-      
+
       toast.success(`Program files for '${payload.programName}' created successfully!`);
       console.log('useCreateSolanaProgramFiles: Files created successfully:', result.data);
       return result.data;
-
     } catch (err: any) {
-      const errorMessage = err?.message || 'An unexpected error occurred while creating Solana program files.';
+      const errorMessage =
+        err?.message || 'An unexpected error occurred while creating Solana program files.';
       setError(errorMessage);
       toast.error(errorMessage);
       console.error('useCreateSolanaProgramFiles: Catch block error:', err);
@@ -624,7 +654,7 @@ export function useCreateSolanaProgramFiles() {
  * Hook to request a new compilation for a project.
  * @returns Function to trigger compilation request, loading state, and error state.
  */
-export function useRequestCompilation() { 
+export function useRequestCompilation() {
   const { mutate } = useSWRConfig();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -664,7 +694,10 @@ export function useRequestCompilation() {
 export interface UseProjectCompilationSubscriptionProps {
   projectId: string | null | undefined;
   onDataChange: (payload: RealtimePostgresChangesPayload<Compilation>) => void;
-  onSubscriptionStatusChange?: (status: "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR", error?: Error) => void;
+  onSubscriptionStatusChange?: (
+    status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR',
+    error?: Error
+  ) => void;
   enabled?: boolean; // New prop to control subscription
 }
 
@@ -682,7 +715,9 @@ export function useProjectCompilationSubscription({
     if (!enabled || !projectId) {
       if (channelRef.current) {
         console.log(`[Hook] Unsubscribing because not enabled or no projectId: ${projectId}`);
-        channelRef.current.unsubscribe().catch(err => console.error("Error unsubscribing (disabled/no projectId):", err));
+        channelRef.current
+          .unsubscribe()
+          .catch((err) => console.error('Error unsubscribing (disabled/no projectId):', err));
         channelRef.current = null;
         setIsSubscribed(false);
       }
@@ -719,7 +754,9 @@ export function useProjectCompilationSubscription({
     return () => {
       console.log(`[Hook] Cleanup: Unsubscribing from project: ${projectId}`);
       if (channelRef.current) {
-        channelRef.current.unsubscribe().catch(err => console.error("Error unsubscribing (cleanup):", err));
+        channelRef.current
+          .unsubscribe()
+          .catch((err) => console.error('Error unsubscribing (cleanup):', err));
         channelRef.current = null;
       }
       setIsSubscribed(false);
@@ -733,3 +770,61 @@ export function useProjectCompilationSubscription({
 }
 
 // --- End of Realtime Compilation Subscription Hook ---
+
+/**
+ * Hook to fetch all compilation records for a specific project.
+ * @returns Function to trigger fetching compilations, and the fetched data, loading state, error state.
+ */
+export function useGetProjectCompilations() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [compilations, setCompilations] = useState<Compilation[] | null>(null);
+
+  const fetchCompilations = async (projectId: string): Promise<Compilation[] | null> => {
+    if (!projectId) {
+      setError('Project ID is required to fetch compilations.');
+      toast.error('Project ID is required to fetch compilations.');
+      return null;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setCompilations(null); // Clear previous data
+
+    try {
+      console.log(`[useGetProjectCompilations] Fetching compilations for project: ${projectId}`);
+      const result = await getCompilationsByProjectAction(projectId);
+
+      if (!result.success || !result.data) {
+        const errorMessage = result.error || 'Failed to fetch compilations or no data returned.';
+        console.error('[useGetProjectCompilations] Error from action:', errorMessage, result);
+        throw new Error(errorMessage);
+      }
+
+      console.log(
+        `[useGetProjectCompilations] Compilations fetched successfully for project: ${projectId}, count: ${result.data.length}`
+      );
+      setCompilations(result.data);
+      // Opsiyonel: Başarı toast mesajı eklenebilir ama genellikle veri çekme işlemlerinde gösterilmez.
+      // toast.success(`Compilations loaded for project ${projectId}`);
+      return result.data;
+    } catch (err: any) {
+      const errorMessage =
+        err?.message || 'An unexpected error occurred while fetching compilations.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('[useGetProjectCompilations] Catch block error:', err);
+      setCompilations(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    fetchCompilations,
+    compilations,
+    isLoading,
+    error,
+  };
+}

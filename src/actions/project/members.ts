@@ -15,8 +15,8 @@ import { sendInvitationEmail } from '../email';
  */
 export async function getProjectOwner(ownerId: string) {
   try {
-    console.log('=== SERVER ACTION: getProjectOwner başladı ===');
-    console.log('Owner ID:', ownerId);
+    /*   console.log('=== SERVER ACTION: getProjectOwner başladı ==='); */
+    /* console.log('Owner ID:', ownerId); */
 
     if (!ownerId) {
       console.log('Owner ID boş veya geçersiz, varsayılan kullanıcı bilgisi döndürülüyor');
@@ -40,8 +40,8 @@ export async function getProjectOwner(ownerId: string) {
       return { id: ownerId, email: null, fullname: 'Anonymous', avatar_url: null };
     }
 
-    console.log('Proje sahibi bilgisi başarıyla alındı');
-    console.log('=== SERVER ACTION: getProjectOwner başarıyla tamamlandı ===');
+    /* console.log('Proje sahibi bilgisi başarıyla alındı'); */
+    /* console.log('=== SERVER ACTION: getProjectOwner başarıyla tamamlandı ==='); */
     return data[0];
   } catch (error) {
     console.error('Proje sahibi bilgisi alınırken beklenmeyen hata:', error);
@@ -58,9 +58,9 @@ export async function getProjectOwner(ownerId: string) {
  */
 export async function isProjectOwner(userId: string, projectId: string): Promise<boolean> {
   try {
-    console.log('=== SERVER ACTION: isProjectOwner başladı ===');
-    console.log('Kullanıcı ID:', userId);
-    console.log('Proje ID:', projectId);
+    /* console.log('=== SERVER ACTION: isProjectOwner başladı ==='); */
+    /* console.log('Kullanıcı ID:', userId); */
+    /* console.log('Proje ID:', projectId); */
 
     // Proje ID'sinin geçerli bir UUID olup olmadığını kontrol et
     // Basit bir regex kontrolü yapabiliriz veya bir UUID validation kütüphanesi kullanılabilir.
@@ -85,8 +85,8 @@ export async function isProjectOwner(userId: string, projectId: string): Promise
       return false;
     }
 
-    console.log('Proje sahipliği kontrolü:', isOwner);
-    console.log('=== SERVER ACTION: isProjectOwner başarıyla tamamlandı ===');
+    /* console.log('Proje sahipliği kontrolü:', isOwner);
+    console.log('=== SERVER ACTION: isProjectOwner başarıyla tamamlandı ==='); */
     return !!isOwner;
   } catch (error) {
     console.error('Proje sahibi kontrolünde beklenmeyen hata:', error);
@@ -101,7 +101,7 @@ export async function isProjectOwner(userId: string, projectId: string): Promise
  */
 export async function getProjectInvitations() {
   try {
-    console.log('=== SERVER ACTION: getProjectInvitations başladı ===');
+    /* console.log('=== SERVER ACTION: getProjectInvitations başladı ==='); */
 
     // Kullanıcı oturumunu al
     const { data: sessionData } = await supabase.auth.getSession();
@@ -112,7 +112,7 @@ export async function getProjectInvitations() {
     }
 
     const userId = sessionData.session.user.id;
-    console.log('Kullanıcı ID:', userId);
+    console.log('User ID:', userId);
 
     // RPC fonksiyonunu çağır
     const { data, error: rpcError } = await supabase.rpc('get_user_project_invitations', {
@@ -130,17 +130,17 @@ export async function getProjectInvitations() {
       return [];
     }
 
-    console.log(`${data.length} adet davet bulundu`);
+    /* console.log(`${data.length} adet davet bulundu`); */
 
     // RPC verisini ProjectInvitation tipine map et
     const formattedInvitations = data.map(mapRpcInvitationToInvitation);
 
-    console.log('Davetler başarıyla formatlandı');
-    console.log('=== SERVER ACTION: getProjectInvitations başarıyla tamamlandı ===');
+    /*  console.log('Davetler başarıyla formatlandı'); */
+    /* console.log('=== SERVER ACTION: getProjectInvitations başarıyla tamamlandı ==='); */
     return formattedInvitations; // Formatlanmış veriyi döndür
   } catch (error) {
     console.error('Davetler alınırken beklenmeyen hata:', error);
-    console.log('=== SERVER ACTION: getProjectInvitations hata ile tamamlandı ===');
+    /* console.log('=== SERVER ACTION: getProjectInvitations hata ile tamamlandı ==='); */
     return [];
   }
 }
@@ -153,8 +153,8 @@ export async function getProjectInvitations() {
 export async function getProjectMembers(projectId: string): Promise<ProjectCollaborator[]> {
   // Dönüş tipini güncelle
   try {
-    console.log('=== SERVER ACTION: getProjectMembers başladı ===');
-    console.log('Proje ID:', projectId);
+    /* console.log('=== SERVER ACTION: getProjectMembers başladı ==='); */
+    /* console.log('Proje ID:', projectId); */
 
     // RPC fonksiyonunu çağır
     const { data, error: rpcError } = await supabase.rpc('get_project_members', {
@@ -172,13 +172,13 @@ export async function getProjectMembers(projectId: string): Promise<ProjectColla
       return [];
     }
 
-    console.log(`${data.length} işbirlikçi (üye/davet) başarıyla alındı`);
+    /* console.log(`${data.length} işbirlikçi (üye/davet) başarıyla alındı`); */
 
     // RPC verisini doğrudan ProjectCollaborator dizisi olarak döndür
     // mapRpcMemberToProjectMember çağrısını kaldır
     const collaborators = data as ProjectCollaborator[]; // Direkt type assertion
 
-    console.log('=== SERVER ACTION: getProjectMembers başarıyla tamamlandı ===');
+    /* console.log('=== SERVER ACTION: getProjectMembers başarıyla tamamlandı ==='); */
     return collaborators; // Ham ama tipli veriyi döndür
   } catch (error) {
     console.error('Proje işbirlikçileri alınırken beklenmeyen hata:', error);
@@ -216,7 +216,7 @@ export async function inviteProjectMember(
     }
 
     const currentUserId = sessionData.session.user.id;
-    console.log('Davet eden kullanıcı ID:', currentUserId);
+    /* console.log('Davet eden kullanıcı ID:', currentUserId); */
 
     // 2. Davet edilecek kullanıcının varlığını kontrol et
     const { data: existingUser, error: userError } = await supabase
@@ -378,7 +378,7 @@ export async function acceptProjectInvitation(memberId: string) {
     }
 
     const userId = sessionData.session.user.id;
-    console.log('Oturum açmış kullanıcı ID:', userId);
+    /* console.log('Oturum açmış kullanıcı ID:', userId); */
 
     // 3. RPC fonksiyonu ile daveti kabul et
     console.log('RPC fonksiyonu çağrılıyor...');
@@ -438,8 +438,8 @@ export async function rejectProjectInvitation(memberId: string) {
       throw new Error('Session not found.');
     }
 
-    const userId = sessionData.session.user.id;
-    console.log('Oturum açmış kullanıcı ID:', userId);
+    /* const userId = sessionData.session.user.id; */
+    /* console.log('Oturum açmış kullanıcı ID:', userId); */
 
     // 3. RPC fonksiyonu ile daveti reddet
     console.log('RPC fonksiyonu çağrılıyor...');
@@ -572,11 +572,11 @@ export async function addProjectMember(
   role: string = 'member'
 ) {
   try {
-    console.log('=== SERVER ACTION: addProjectMember başladı ===');
+    /* console.log('=== SERVER ACTION: addProjectMember başladı ===');
     console.log('Proje ID:', projectId);
     console.log('Kullanıcı ID:', userId || 'null');
     console.log('E-posta:', email);
-    console.log('Rol:', role);
+    console.log('Rol:', role); */
 
     // 1. Kullanıcı oturumunu kontrol et
     const { data: sessionData } = await supabase.auth.getSession();

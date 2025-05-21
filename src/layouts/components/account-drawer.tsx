@@ -44,7 +44,7 @@ export function AccountDrawer({ data = [], sx, ...other }: AccountDrawerProps) {
 
   const { user } = useAuthContext();
 
-  console.log(user);
+  /* console.log(user); */
 
   const { value: open, onFalse: onClose, onTrue: onOpen } = useBoolean();
 

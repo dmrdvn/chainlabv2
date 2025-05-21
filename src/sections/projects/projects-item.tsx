@@ -86,7 +86,7 @@ export function ProjectsItem({ project, editHref, detailsHref, onDelete, sx, ...
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <Avatar
               alt={project.name}
-              src={project.logo_url || '/assets/images/avatar/avatar_25.jpg'}
+              src={project.logo_url || ''}
               variant="rounded"
               sx={{ width: 48, height: 48, mr: 2 }}
             />

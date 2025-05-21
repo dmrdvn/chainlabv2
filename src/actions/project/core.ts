@@ -200,7 +200,7 @@ export async function updateProject(
 // Consider creating a get_projects_for_user RPC if finer-grained control or additional logic is needed.
 export async function getUserProjects(): Promise<Project[] | null> {
   try {
-    console.log('=== SERVER ACTION: getUserProjects started ===');
+    /* console.log('=== SERVER ACTION: getUserProjects started ==='); */
 
     const { data: sessionData } = await supabase.auth.getSession();
 
@@ -246,8 +246,8 @@ export async function getUserProjects(): Promise<Project[] | null> {
 // Consider creating a get_project_details_by_id RPC if server-side logic/joins are complex.
 export async function getProjectById(projectId: string): Promise<Project | null> {
   try {
-    console.log('=== SERVER ACTION: getProjectById started ===');
-    console.log('Project ID:', projectId);
+    /* console.log('=== SERVER ACTION: getProjectById started ===');
+    console.log('Project ID:', projectId); */
 
     // 0. Get current session for potential auth check later
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -292,8 +292,8 @@ export async function getProjectById(projectId: string): Promise<Project | null>
     // For 'public' projects, RLS policies should handle if unauthenticated users can see them.
     // If session is required even for public projects, add: if (!sessionData.session) { return null; }
 
-    console.log('Project fetched successfully and authorized');
-    console.log('=== SERVER ACTION: getProjectById completed successfully ===');
+    /* console.log('Project fetched successfully and authorized'); */
+    /* console.log('=== SERVER ACTION: getProjectById completed successfully ==='); */
     return project;
   } catch (error) {
     console.error('Unexpected error while fetching project:', error);

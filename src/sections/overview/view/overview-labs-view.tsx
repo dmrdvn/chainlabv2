@@ -135,7 +135,7 @@ export function OverviewLabsView() {
 
   const { news, newsLoading } = useLatestNews();
 
-  useEffect(() => {
+  /* useEffect(() => {
     console.log('overview-labs-view: projectId', projectId);
     console.log('overview-labs-view: currentProjectDetails', currentProjectDetails);
     console.log('overview-labs-view: platform', currentProjectDetails?.platform);
@@ -154,7 +154,7 @@ export function OverviewLabsView() {
     frontendsResponse,
     frontendsLoading,
     frontendsError,
-  ]);
+  ]); */
 
   const handleCreateProject = () => {
     router.push(paths.dashboard.projects.new);

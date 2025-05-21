@@ -11,6 +11,7 @@ export enum SolidityVersion {
 
 export enum EvmVersion {
   DEFAULT = 'paris', // Current default for many tools
+  PARIS = 'paris',
   LONDON = 'london',
   BERLIN = 'berlin',
   ISTANBUL = 'istanbul',
@@ -25,6 +26,7 @@ export enum EvmVersion {
 
 export enum AnchorVersion { // For Solana
   LATEST = '0.29.0',
+  V0_29_0 = '0.29.0',
   V0_28_0 = '0.28.0',
   V0_27_0 = '0.27.0',
 }
