@@ -18,7 +18,12 @@ export interface FileTreeNode {
  * @returns An array of root FileTreeNode objects.
  */
 export function buildFileTree(files: ProjectFile[]): FileTreeNode[] {
-  const tree: FileTreeNode[] = [];
+  const artificialRoot: FileTreeNode = {
+    id: '__artificial_root__',
+    name: 'Root',
+    isDirectory: true,
+    children: [],
+  };
   const map: { [key: string]: FileTreeNode } = {};
 
   const sortedFiles = files
@@ -29,10 +34,11 @@ export function buildFileTree(files: ProjectFile[]): FileTreeNode[] {
     const cleanedPath = file.file_path.startsWith('/')
       ? file.file_path.substring(1)
       : file.file_path;
-    
-    // Filter out empty strings that might result from multiple slashes e.g. path///fileName
-    const pathParts = cleanedPath.split('/').filter(part => part.length > 0);
 
+    // Filter out empty strings that might result from multiple slashes e.g. path///fileName
+    const pathParts = cleanedPath.split('/').filter((part) => part.length > 0);
+
+    let currentLevelChildren = artificialRoot.children!; // Başlangıçta yapay kökün çocukları
     let accumulatedPath = '';
 
     pathParts.forEach((part: string, index: number) => {
@@ -46,45 +52,56 @@ export function buildFileTree(files: ProjectFile[]): FileTreeNode[] {
           id: accumulatedPath,
           name: part,
           isDirectory: isLastPart ? file.is_directory : true,
+          // Children dizisi, eğer bir dizinse ve son parça değilse ya da son parça ve bir dizinse oluşturulur
           children: isLastPart && !file.is_directory ? undefined : [],
           originalData: isLastPart ? file : undefined,
         };
         map[accumulatedPath] = node;
 
+        // Düğümü doğru ebeveynin çocuklarına ekle
         if (index === 0) {
-          if (!tree.some(rootNode => rootNode.id === node.id)) {
-            tree.push(node);
+          // Eğer pathParts'ın ilk elemanı ise, yapay kökün çocuğu olmalı
+          if (!currentLevelChildren.some((rootNode) => rootNode.id === node!.id)) {
+            currentLevelChildren.push(node);
           }
         } else {
+          // Değilse, bir önceki parçanın oluşturduğu düğümün çocuğu olmalı
           const parentPath = pathParts.slice(0, index).join('/');
           const parentNode = map[parentPath];
           if (parentNode && parentNode.children) {
-            if (!parentNode.children.some(childNode => childNode.id === node.id)) {
+            if (!parentNode.children.some((childNode) => childNode.id === node!.id)) {
               parentNode.children.push(node);
             }
           } else {
-            console.warn(`buildFileTree: Parent node '${parentPath}' not found for child '${node.name}'. Adding to root as fallback.`);
-            if (!tree.some(rootNode => rootNode.id === node.id)) {
-              tree.push(node);
+            // Bu durum normalde olmamalı, çünkü ebeveynler önce işlenir
+            // Güvenlik için, eğer ebeveyn bulunamazsa yapay köke ekle
+            console.warn(
+              `buildFileTree: Parent node '${parentPath}' not found for child '${node.name}'. Adding to artificial root as fallback.`
+            );
+            if (!artificialRoot.children!.some((rootNode) => rootNode.id === node!.id)) {
+              artificialRoot.children!.push(node);
             }
           }
         }
       } else {
-        // Node already exists, potentially update it if this 'file' entry is more specific
+        // Düğüm zaten var (önceki bir dosya yolu tarafından bir dizin olarak oluşturulmuş olabilir)
         if (isLastPart) {
-          // If this file entry explicitly defines this path segment
+          // Bu dosya yolu bu düğümü tanımlıyorsa, bilgilerini güncelle
           node.isDirectory = file.is_directory;
+          node.originalData = file;
           if (file.is_directory && !node.children) {
             node.children = [];
+          } else if (!file.is_directory) {
+            node.children = undefined; // Dosyaların çocukları olmaz
           }
-          if (!file.is_directory) {
-            node.children = undefined; // Ensure files don't have a children array
-          }
-          node.originalData = file; // Update with the specific file data
         } else if (node.isDirectory && !node.children) {
-          // If it's an intermediate path and confirmed as directory, ensure children array
+          // Eğer bir ara yol (dizin) ise ve children yoksa, oluştur
           node.children = [];
         }
+      }
+      // Bir sonraki seviye için children dizisini güncelle
+      if (node.isDirectory && node.children) {
+        currentLevelChildren = node.children;
       }
     });
   });
@@ -95,13 +112,13 @@ export function buildFileTree(files: ProjectFile[]): FileTreeNode[] {
       if (!a.isDirectory && b.isDirectory) return 1;
       return a.name.localeCompare(b.name);
     });
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (node.children && node.children.length > 0) {
         sortNodes(node.children);
       }
     });
   };
 
-  sortNodes(tree);
-  return tree;
+  sortNodes(artificialRoot.children!);
+  return [artificialRoot]; // Her zaman yapay kökü içeren bir dizi döndür
 }

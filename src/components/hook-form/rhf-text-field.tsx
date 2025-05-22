@@ -26,43 +26,39 @@ export function RHFTextField({
     <Controller
       name={name}
       control={control}
-      render={({ field, fieldState: { error } }) => {
-        const currentValue = field.value ?? '';
+      render={({ field, fieldState: { error } }) => (
+        <TextField
+          {...field}
+          fullWidth
+          value={isNumberType ? transformValue(field.value) : field.value}
+          onChange={(event) => {
+            const transformedValue = isNumberType
+              ? transformValueOnChange(event.target.value)
+              : event.target.value;
 
-        return (
-          <TextField
-            {...field}
-            fullWidth
-            value={isNumberType ? transformValue(currentValue) : currentValue}
-            onChange={(event) => {
-              const rawValue = event.target.value;
-              const transformedValue = isNumberType ? transformValueOnChange(rawValue) : rawValue;
+            field.onChange(transformedValue);
+          }}
+          onBlur={(event) => {
+            const transformedValue = isNumberType
+              ? transformValueOnBlur(event.target.value)
+              : event.target.value;
 
-              field.onChange(transformedValue);
-            }}
-            onBlur={(event) => {
-              const rawValue = event.target.value;
-              const transformedValueOnBlur = isNumberType
-                ? transformValueOnBlur(rawValue)
-                : rawValue;
-
-              field.onChange(transformedValueOnBlur);
-            }}
-            type={isNumberType ? 'text' : type}
-            error={!!error}
-            helperText={error?.message ?? helperText}
-            slotProps={{
-              ...slotProps,
-              htmlInput: {
-                autoComplete: 'off',
-                ...slotProps?.htmlInput,
-                ...(isNumberType && { inputMode: 'decimal', pattern: '[0-9]*\\.?[0-9]*' }),
-              },
-            }}
-            {...other}
-          />
-        );
-      }}
+            field.onChange(transformedValue);
+          }}
+          type={isNumberType ? 'text' : type}
+          error={!!error}
+          helperText={error?.message ?? helperText}
+          slotProps={{
+            ...slotProps,
+            htmlInput: {
+              autoComplete: 'off',
+              ...slotProps?.htmlInput,
+              ...(isNumberType && { inputMode: 'decimal', pattern: '[0-9]*\\.?[0-9]*' }),
+            },
+          }}
+          {...other}
+        />
+      )}
     />
   );
 }

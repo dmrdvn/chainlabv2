@@ -136,7 +136,7 @@ export function useProjectOwner(ownerId: string | null) {
 
         // getProjectOwner her zaman bir değer döndürür (varsayılan bile olsa)
         // o yüzden sadece başarılı olarak logla
-        console.log(`Successfully fetched owner details for ID: ${ownerId}`);
+        /* console.log(`Successfully fetched owner details for ID: ${ownerId}`); */
 
         return owner;
       } catch (err) {
@@ -458,46 +458,19 @@ export function useProjectById(projectId: string | null) {
   const key = projectId ? ['project', projectId] : null;
 
   const fetchProjectDetails = async ([_, pId]: [string, string]): Promise<Project | null> => {
-    const response: any = await getProjectById(pId); // Temporarily cast to any
-
-    if (response && typeof response === 'object') {
-      if ('success' in response) {
-        // ApiResponse structure
-        if (response.success && response.data) {
-          return response.data as Project;
-        }
-        if (!response.success && response.error) {
-          throw new Error(response.error as string);
-        }
-        if (response.success && !response.data) {
-          console.warn(`Project ${pId} fetched successfully but returned no data.`);
-          return null;
-        }
-        throw new Error('Failed to fetch project details: Unknown error from API.');
-      } else {
-        // Direct Project object (or null/undefined)
-        // Check for essential properties of Project to be safer, or assume it's Project | null
-        if (response.id && response.name) {
-          // Basic check for Project-like structure
-          console.warn(
-            'getProjectById returned a direct object, not ApiResponse. Casting directly.'
-          );
-          return response as Project;
-        } else if (response === null) {
-          return null;
-        }
-        // If it's an object but not ApiResponse and not clearly a Project, it's an issue
-        console.error(
-          'Invalid or unexpected response structure from getProjectById (not ApiResponse and not Project):',
-          response
-        );
-        throw new Error('Invalid or unexpected response structure from getProjectById.');
+    try {
+      const project = await getProjectById(pId);
+      // getProjectById ya Project döner ya da null (veya hata fırlatır)
+      // Bu yüzden karmaşık ApiResponse kontrolüne gerek yok.
+      if (project === null) {
+        console.warn(`Project with ID ${pId} not found or getProjectById returned null.`);
       }
+      return project;
+    } catch (error) {
+      console.error(`Error in fetchProjectDetails for project ID ${pId}:`, error);
+      // Hata SWR'a iletilir, SWR kendi hata yönetimini yapar.
+      throw error;
     }
-
-    // Fallback for null or non-object response
-    console.error('Invalid response structure from getProjectById (null or not an object)');
-    throw new Error('Invalid response structure from getProjectById.');
   };
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<Project | null, Error>(

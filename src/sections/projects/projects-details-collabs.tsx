@@ -202,11 +202,11 @@ export function ProjectsDetailsCollabs({
   }, [onSuccess]);
 
   // Debug bilgileri - üyeleri ve yükleme durumunu göster
-  console.log('ProjectsDetailsCollabs - Debug Info:');
+  /*  console.log('ProjectsDetailsCollabs - Debug Info:');
   console.log('- Loading:', loading || collaboratorsLoading);
   console.log('- Collaborators:', collaborators);
   console.log('- Collaborators length:', collaborators?.length || 0);
-  console.log('- Project ID:', projectId);
+  console.log('- Project ID:', projectId); */
 
   if (loading || collaboratorsLoading) {
     return (
@@ -553,7 +553,9 @@ export function ProjectsDetailsCollabs({
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} color="inherit">Cancel</Button>
+          <Button onClick={handleCloseDeleteDialog} color="inherit">
+            Cancel
+          </Button>
           <Button
             onClick={handleRemoveMember}
             color="error"

@@ -216,7 +216,7 @@ export function useProjectFrontends(projectId: string | null) {
   // projectId değiştiğinde tüm ilgili cache'leri temizle
   useEffect(() => {
     if (projectId) {
-      console.log('useProjectFrontends: Proje ID değişti, cache temizleniyor:', projectId);
+      /* console.log('useProjectFrontends: Proje ID değişti, cache temizleniyor:', projectId); */
       globalMutate(
         (key) => typeof key === 'string' && key.startsWith('project-frontends-'),
         undefined,

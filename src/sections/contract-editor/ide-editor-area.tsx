@@ -1,45 +1,45 @@
-import type { ProjectFile } from "src/types/project";
-import type * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import type { ProjectFile } from 'src/types/project';
+import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
-import { toast } from "sonner";
-import { Icon } from "@iconify/react";
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import { toast } from 'sonner';
+import { Icon } from '@iconify/react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
-import Box from "@mui/material/Box";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
-import { useTheme } from "@mui/material/styles";
-import { CircularProgress } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
+import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import { useTheme } from '@mui/material/styles';
+import { CircularProgress } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 
-import { useProjectFileContent } from "src/hooks/projects/use-project-files-queries";
-import { useUpdateProjectFileContent } from "src/hooks/projects/use-project-mutations";
+import { useProjectFileContent } from 'src/hooks/projects/use-project-files-queries';
+import { useUpdateProjectFileContent } from 'src/hooks/projects/use-project-mutations';
 
-import { getFileIconElement } from "src/utils/file-icons.utils";
+import { getFileIconElement } from 'src/utils/file-icons.utils';
 
-import { MonacoEditor } from "src/components/monaco-editor";
-import { getLanguageFromPath } from "src/components/monaco-editor/config";
+import { MonacoEditor } from 'src/components/monaco-editor';
+import { getLanguageFromPath } from 'src/components/monaco-editor/config';
 
-import IdeWelcome from "./ide-welcome";
-import IdeSettingsPanel from "./ide-settings-panel";
+import IdeWelcome from './ide-welcome';
+import IdeSettingsPanel from './ide-settings-panel';
 
 // Special file ID for settings panel
-export const SETTINGS_FILE_ID = "settings:general";
+export const SETTINGS_FILE_ID = 'settings:general';
 
 // Create a virtual file for the settings panel
 export const createSettingsFile = (): ProjectFile => ({
   id: SETTINGS_FILE_ID,
-  project_id: "",
-  project_version_id: "",
+  project_id: '',
+  project_version_id: '',
   parent_id: null,
-  file_name: "settings.json",
-  file_path: "settings.json",
+  file_name: 'settings.json',
+  file_path: 'settings.json',
   is_directory: false,
   content: null,
-  mime_type: "application/json",
-  created_at: "",
-  updated_at: "",
+  mime_type: 'application/json',
+  created_at: '',
+  updated_at: '',
 });
 
 interface CursorPosition {
@@ -78,19 +78,13 @@ export default function IdeEditorArea({
    */
 
   // Dosya kaydetme hook'u ve yükleme durumu
-  const { handleUpdateFile, isLoading: isSaving } =
-    useUpdateProjectFileContent();
+  const { handleUpdateFile, isLoading: isSaving } = useUpdateProjectFileContent();
 
   // Yerel olarak kaydedilmiş içerikleri dosya ID'sine göre takip etmek için state
-  const [localContents, setLocalContents] = useState<Record<string, string>>(
-    {},
-  );
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<
-    Record<string, boolean>
-  >({});
+  const [localContents, setLocalContents] = useState<Record<string, string>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<Record<string, boolean>>({});
 
-  const displayedContent =
-    localContents[activeFileId ?? ""] ?? activeFileData?.content ?? "";
+  const displayedContent = localContents[activeFileId ?? ''] ?? activeFileData?.content ?? '';
 
   const handleContentChange = (value: string | undefined) => {
     if (activeFileId && value !== undefined) {
@@ -126,26 +120,20 @@ export default function IdeEditorArea({
         toast.error(result.message || `Error saving ${activeFile.file_name}`);
       }
     } catch (err: any) {
-      console.error("Error during handleSave:", err);
+      console.error('Error during handleSave:', err);
       toast.error(
-        err.message ||
-          `An unexpected error occurred while saving ${activeFile.file_name}`,
+        err.message || `An unexpected error occurred while saving ${activeFile.file_name}`
       );
     }
   }, [activeFile, localContents, handleUpdateFile, hasUnsavedChanges]);
 
   useEffect(() => {
-    if (
-      activeFileId &&
-      activeFileId !== SETTINGS_FILE_ID &&
-      editorRef.current
-    ) {
+    if (activeFileId && activeFileId !== SETTINGS_FILE_ID && editorRef.current) {
       // Ensure content is loaded before setting up listeners or focusing
       if (!isContentLoadingActual && activeFileData) {
         const editorModel = editorRef.current.getModel();
         const currentEditorContent = editorRef.current.getValue();
-        const newContent =
-          localContents[activeFileId] ?? activeFileData.content ?? "";
+        const newContent = localContents[activeFileId] ?? activeFileData.content ?? '';
 
         if (editorModel && currentEditorContent !== newContent) {
           editorRef.current.setValue(newContent);
@@ -166,10 +154,10 @@ export default function IdeEditorArea({
     return (
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
         }}
       >
         <CircularProgress size={24} />
@@ -185,7 +173,7 @@ export default function IdeEditorArea({
           Error loading file:
         </Typography>
         <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-          {contentErrorActual.message || "An unknown error occurred."}
+          {contentErrorActual.message || 'An unknown error occurred.'}
         </Typography>
       </Box>
     );
@@ -194,15 +182,15 @@ export default function IdeEditorArea({
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
+        display: 'flex',
+        flexDirection: 'column',
         flexGrow: 1,
         minHeight: 0,
       }}
     >
       {openFiles.length > 0 && (
-        <Box sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
-          {" "}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+          {' '}
           {/* Tabs */}
           <Tabs
             value={activeFileId || false}
@@ -212,12 +200,12 @@ export default function IdeEditorArea({
             allowScrollButtonsMobile
             aria-label="Open file tabs"
             sx={{
-              minHeight: "40px",
+              minHeight: '40px',
               paddingLeft: 0,
-              "& .MuiTabs-indicator": {
-                backgroundColor: "primary.main",
+              '& .MuiTabs-indicator': {
+                backgroundColor: 'primary.main',
               },
-              "& .MuiTabs-flexContainer": {
+              '& .MuiTabs-flexContainer': {
                 gap: 0,
               },
             }}
@@ -225,8 +213,8 @@ export default function IdeEditorArea({
             {openFiles.map((file) => {
               const fileName =
                 file.id === SETTINGS_FILE_ID
-                  ? "Settings"
-                  : file.file_path.split("/").pop() || file.file_path; // Use full path as fallback
+                  ? 'Settings'
+                  : file.file_path.split('/').pop() || file.file_path; // Use full path as fallback
 
               return (
                 <Tab
@@ -235,8 +223,8 @@ export default function IdeEditorArea({
                   label={
                     <Box
                       sx={{
-                        display: "flex",
-                        alignItems: "center",
+                        display: 'flex',
+                        alignItems: 'center',
                         px: 0,
                         py: 0.5,
                       }}
@@ -257,17 +245,12 @@ export default function IdeEditorArea({
                       <Typography
                         variant="body2"
                         sx={{
-                          textTransform: "none",
+                          textTransform: 'none',
                           mr: 1,
-                          color:
-                            activeFileId === file.id
-                              ? "text.primary"
-                              : "text.secondary",
+                          color: activeFileId === file.id ? 'text.primary' : 'text.secondary',
                         }}
                       >
-                        {hasUnsavedChanges[file.id]
-                          ? `${fileName} *`
-                          : fileName}
+                        {hasUnsavedChanges[file.id] ? `${fileName} *` : fileName}
                       </Typography>
                       <IconButton
                         component="div"
@@ -275,19 +258,17 @@ export default function IdeEditorArea({
                         onClick={(e) => {
                           e.stopPropagation();
                           if (hasUnsavedChanges[file.id]) {
-                            toast.warning(
-                              `Please save changes in ${fileName} before closing.`,
-                            );
+                            toast.warning(`Please save changes in ${fileName} before closing.`);
                           } else {
                             onCloseTab(file.id);
                           }
                         }}
                         sx={{
-                          ml: "auto",
+                          ml: 'auto',
                           p: 0.25,
                           opacity: 0.7,
-                          "&:hover": { opacity: 1, bgcolor: "action.hover" },
-                          color: "inherit",
+                          '&:hover': { opacity: 1, bgcolor: 'action.hover' },
+                          color: 'inherit',
                         }}
                       >
                         <Icon icon="eva:close-outline" width={16} height={16} />
@@ -295,20 +276,15 @@ export default function IdeEditorArea({
                     </Box>
                   }
                   sx={{
-                    minHeight: "40px",
-                    p: "0px 6px 0px 12px",
+                    minHeight: '40px',
+                    p: '0px 6px 0px 12px',
                     borderRight: 1,
-                    borderColor: "divider",
+                    borderColor: 'divider',
                     opacity: 1,
                     bgcolor:
-                      activeFileId === file.id
-                        ? theme.palette.action.selected
-                        : "transparent",
-                    "&:hover": {
-                      bgcolor:
-                        activeFileId !== file.id
-                          ? theme.palette.action.hover
-                          : undefined,
+                      activeFileId === file.id ? theme.palette.action.selected : 'transparent',
+                    '&:hover': {
+                      bgcolor: activeFileId !== file.id ? theme.palette.action.hover : undefined,
                     },
                   }}
                 />
@@ -322,23 +298,23 @@ export default function IdeEditorArea({
       <Box
         sx={{
           flexGrow: 1,
-          position: "relative",
-          overflow: "hidden",
+          position: 'relative',
+          overflow: 'hidden',
           minHeight: 0,
         }}
       >
         {isSaving && (
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               p: 1,
-              backgroundColor: "action.hover",
+              backgroundColor: 'action.hover',
               borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
             }}
           >
             <CircularProgress size={16} sx={{ mr: 1 }} />
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               Saving...
             </Typography>
           </Box>
@@ -351,11 +327,11 @@ export default function IdeEditorArea({
           <MonacoEditor
             key={activeFile?.id} // Dosya değiştiğinde editor'ü yeniden oluştur
             height="100%" // Restore height prop
-            language={getLanguageFromPath(activeFile?.file_path || "")}
-            value={displayedContent} // Yerel değişiklikleri de içeren içeriği göster
-            onChange={handleContentChange} // İçerik değiştikçe yerel state'i güncelle
-            onSave={handleSave} // Kaydetme eylemini tetikle
-            onCursorPositionChange={onCursorPositionChange} // İmleç pozisyonunu üst bileşene ilet
+            language={getLanguageFromPath(activeFile?.file_path || '')}
+            value={displayedContent}
+            onChange={handleContentChange}
+            onSave={handleSave}
+            onCursorPositionChange={onCursorPositionChange}
           />
         )}
       </Box>

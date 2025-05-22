@@ -55,6 +55,19 @@ export function RHFCode({
               : [slotProps?.wrapper?.sx]),
           ]}
         >
+          {/*  <MuiOtpInput
+            {...field}
+            autoFocus
+            gap={1.5}
+            length={6}
+            TextFieldsProps={{
+              placeholder,
+              error: !!error,
+              ...slotProps?.textfield,
+            }}
+            {...other}
+          /> */}
+
           <HelperText
             {...slotProps?.helperText}
             errorMessage={error?.message}

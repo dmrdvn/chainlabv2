@@ -798,7 +798,18 @@ export default function ContractEditorView() {
         />
       </Box>
 
-      {isChatPanelVisible && <IdeChatPanel onClose={toggleChatPanel} />}
+      {isChatPanelVisible && (
+        <IdeChatPanel
+          onClose={toggleChatPanel}
+          projectName={currentProjectName || 'Untitled Project'}
+          allProjectFiles={transformedFiles}
+          activeEditorFileId={activeFileId}
+          openEditorFiles={openEditorFiles}
+          platform={currentProjectDetails?.platform ?? undefined}
+          lastCompilationResult={simplifiedCompilationForIde}
+          isCompiling={isRequestingCompilationGlobal || isSubscribingToCompilations}
+        />
+      )}
     </Box>
   );
 }

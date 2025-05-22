@@ -14,13 +14,11 @@ import { CONFIG } from 'src/global-config';
 
 import { Label } from 'src/components/label';
 
-import { useMockedUser } from 'src/auth/hooks';
-
+import { useAuthContext } from 'src/auth/hooks';
 // ----------------------------------------------------------------------
 
 export function NavUpgrade({ sx, ...other }: BoxProps) {
-  const { user } = useMockedUser();
-
+  const { user } = useAuthContext();
   return (
     <Box
       sx={[{ px: 2, py: 5, textAlign: 'center' }, ...(Array.isArray(sx) ? sx : [sx])]}

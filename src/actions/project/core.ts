@@ -137,8 +137,8 @@ export async function updateProject(
   projectData: ProjectUpdatePayload
 ): Promise<Project | null> {
   try {
-    console.log('=== SERVER ACTION: updateProject (v2 RPC) started ===');
-    console.log(`Updating project ${projectId} with data:`, projectData);
+    /* console.log('=== SERVER ACTION: updateProject (v2 RPC) started ===');
+    console.log(`Updating project ${projectId} with data:`, projectData); */
 
     // 1. Check user session (RPC'ler SECURITY DEFINER olduğu için aslında gerekmeyebilir)
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -162,7 +162,7 @@ export async function updateProject(
       p_new_logo_url: projectData.logo_url,
       p_new_social_links: projectData.social_links,
     };
-    console.log('Calling RPC update_project_details with params:', rpcParams);
+    /*  console.log('Calling RPC update_project_details with params:', rpcParams); */
 
     const { data: updatedProject, error: rpcError } = await supabase.rpc(
       'update_project_details',
@@ -182,8 +182,8 @@ export async function updateProject(
       return null;
     }
 
-    console.log('Project updated successfully via RPC');
-    console.log('=== SERVER ACTION: updateProject (v2 RPC) completed successfully ===');
+    /* console.log('Project updated successfully via RPC');
+    console.log('=== SERVER ACTION: updateProject (v2 RPC) completed successfully ==='); */
     return updatedProject as Project; // Cast if RPC returns a generic object that matches Project
   } catch (error) {
     console.error('Unexpected error while updating project (v2 RPC):', error);
@@ -419,8 +419,8 @@ export async function updateProjectVisibility(
       return null;
     }
 
-    console.log(`Project visibility updated successfully to ${visibility} via RPC`);
-    console.log('=== SERVER ACTION: updateProjectVisibility (v2 RPC) completed successfully ===');
+    /* console.log(`Project visibility updated successfully to ${visibility} via RPC`);
+    console.log('=== SERVER ACTION: updateProjectVisibility (v2 RPC) completed successfully ==='); */
     return updatedProject as Project;
   } catch (error) {
     console.error('Unexpected error while updating project visibility (v2 RPC):', error);

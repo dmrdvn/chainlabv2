@@ -190,25 +190,17 @@ export default function IdeSidebar({
     if (isLoading || !files || files.length === 0) {
       return [];
     }
-    const rawBuiltTree = buildFileTree(files);
+    const rawBuiltTreeWithRoot = buildFileTree(files);
 
-    if (
-      Array.isArray(rawBuiltTree) &&
-      rawBuiltTree.length === 1 &&
-      rawBuiltTree[0].id === '' &&
-      rawBuiltTree[0].name === ''
-    ) {
-      console.log(
-        'IdeSidebar: Using children of artificial root for display:',
-        rawBuiltTree[0].children
-      );
-      return rawBuiltTree[0].children || [];
+    if (rawBuiltTreeWithRoot.length === 1 && rawBuiltTreeWithRoot[0].id === '__artificial_root__') {
+      return rawBuiltTreeWithRoot[0].children || [];
     }
+
     console.warn(
-      'IdeSidebar: buildFileTree did not return expected artificial root. Using raw tree:',
-      rawBuiltTree
+      'IdeSidebar: buildFileTree did not return the expected artificial root. Using empty tree as fallback.',
+      rawBuiltTreeWithRoot
     );
-    return rawBuiltTree;
+    return [];
   }, [files, isLoading]);
 
   useEffect(() => {

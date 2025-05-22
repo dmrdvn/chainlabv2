@@ -410,7 +410,7 @@ export async function deleteProjectItemAction(
 export async function getProjectEvmContractsAction(
   projectId: string
 ): Promise<ApiResponse<ProjectHierarchyItem[]>> {
-  console.log(`=== ACTION: getProjectEvmContractsAction started for projectId: ${projectId} ===`);
+  /* console.log(`=== ACTION: getProjectEvmContractsAction started for projectId: ${projectId} ===`); */
   try {
     if (!projectId) {
       return { success: false, error: 'Invalid project ID.', data: null };
@@ -426,7 +426,7 @@ export async function getProjectEvmContractsAction(
       p_project_id: projectId,
     });
 
-    console.log('RPC (get_project_evm_contracts) raw data:', data);
+    /* console.log('RPC (get_project_evm_contracts) raw data:', data); */
 
     if (rpcError) {
       console.error('RPC error (get_project_evm_contracts):', rpcError.message);
@@ -441,9 +441,9 @@ export async function getProjectEvmContractsAction(
     // Supabase RPC'leri json döndürdüğünde, data zaten parse edilmiş bir dizi olacaktır.
     const contracts = (data || []) as ProjectHierarchyItem[];
 
-    console.log(
+    /* console.log(
       `EVM contracts fetched successfully for projectId: ${projectId}, items: ${contracts.length}`
-    );
+    ); */
     return { success: true, data: contracts, error: undefined };
   } catch (error: any) {
     console.error('Unexpected error in getProjectEvmContractsAction:', error);
@@ -458,7 +458,7 @@ export async function getProjectEvmContractsAction(
 export async function getProjectSolanaProgramsAction(
   projectId: string
 ): Promise<ApiResponse<ProjectHierarchyItem[]>> {
-  console.log(`=== ACTION: getProjectSolanaProgramsAction started for projectId: ${projectId} ===`);
+  /* console.log(`=== ACTION: getProjectSolanaProgramsAction started for projectId: ${projectId} ===`); */
   try {
     if (!projectId) {
       return { success: false, error: 'Invalid project ID.', data: null };
@@ -510,8 +510,8 @@ export async function getProjectSolanaProgramsAction(
  */
 export async function getProjectFrontends(projectId: string) {
   try {
-    console.log('=== SERVER ACTION: getProjectFrontends started ===');
-    console.log('Project ID:', projectId);
+    /* console.log('=== SERVER ACTION: getProjectFrontends started ===');
+    console.log('Project ID:', projectId); */
 
     if (!projectId) {
       console.error('Invalid project ID');
