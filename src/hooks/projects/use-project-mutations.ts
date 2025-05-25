@@ -63,7 +63,6 @@ export function useCreateProject() {
 
       // Update SWR cache
       await mutate('user-projects');
-
       // Redirect to project page
       /* router.push(`dashboard/projects/${result.id}`); */
 

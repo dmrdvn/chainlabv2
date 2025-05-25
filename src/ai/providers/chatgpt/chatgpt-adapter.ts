@@ -1,5 +1,4 @@
-// This file will contain the ChatGPT adapter to interact with OpenAI API.
-import axiosInstance from 'src/lib/axios'; // Projedeki axios instance'ını kullan
+import axiosInstance from 'src/lib/axios';
 import type { ChatMessage, LLMProvider, LLMResponse } from '../../core/types';
 
 const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
@@ -39,6 +38,7 @@ export class ChatGPTAdapter implements LLMProvider {
 
       return {
         content: assistantMessage,
+        llmType: options?.model || 'gpt-4o',
       };
     } catch (error: any) {
       console.error(

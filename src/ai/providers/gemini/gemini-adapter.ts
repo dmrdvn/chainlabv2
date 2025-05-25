@@ -7,6 +7,7 @@ export class GeminiAdapter implements LLMProvider {
 
     return Promise.resolve({
       content: '[Gemini Response Placeholder - Not Implemented]',
+      llmType: options?.model || 'gemini-unknown-replica',
     });
   }
 }

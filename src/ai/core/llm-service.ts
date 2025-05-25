@@ -1,6 +1,8 @@
-import type { ChatMessage, LLMProvider, LLMResponse } from './types';
+import type { ChatMessage, LLMProvider, LLMResponse, LLMOptions } from './types';
 import { ChatGPTAdapter } from '../providers/chatgpt/chatgpt-adapter';
 import { GeminiAdapter } from '../providers/gemini/gemini-adapter';
+import { SensayAdapter } from '../providers/sensay/sensay-adapter';
+import { ClaudeAdapter } from '../providers/claude/claude-adapter';
 
 class LLMService {
   private providers: Record<string, LLMProvider> = {};
@@ -8,29 +10,44 @@ class LLMService {
   constructor() {
     this.providers['openai'] = new ChatGPTAdapter();
     this.providers['gemini'] = new GeminiAdapter();
+    this.providers['sensay'] = new SensayAdapter();
+    this.providers['claude'] = new ClaudeAdapter();
   }
 
   async sendMessage(messages: ChatMessage[], llmType: string): Promise<LLMResponse> {
-    let providerKey = llmType.split('-')[0].toLowerCase(); // örn: "gemini", "gpt", "claude"
+    let providerKey = '';
+    const lowerLlmType = llmType.toLowerCase();
 
-    if (providerKey === 'gpt' || llmType.startsWith('gpt')) {
+    if (lowerLlmType.startsWith('gpt')) {
       providerKey = 'openai';
-    } else if (llmType.startsWith('claude')) {
+    } else if (lowerLlmType.startsWith('claude')) {
       providerKey = 'claude';
-    } else if (llmType.startsWith('gemini')) {
+    } else if (lowerLlmType.startsWith('gemini')) {
       providerKey = 'gemini';
+    } else if (lowerLlmType.startsWith('sensay')) {
+      providerKey = 'sensay';
+    } else {
+      const parts = lowerLlmType.split('-');
+      if (parts.length > 0 && this.providers[parts[0]]) {
+        providerKey = parts[0];
+      } else {
+        console.error(`Could not determine provider for LLM type: ${llmType}`);
+        throw new Error(`LLM provider for type "${llmType}" not found or ambiguous.`);
+      }
     }
 
     const provider = this.providers[providerKey];
 
     if (!provider) {
-      console.error(`No provider found for base key: ${providerKey} (derived from ${llmType})`);
+      console.error(`No provider found for resolved key: ${providerKey} (derived from ${llmType})`);
       throw new Error(
-        `LLM provider for type "${llmType}" not found. Please check llm-service.ts configuration.`
+        `LLM provider for type "${llmType}" (resolved to key "${providerKey}") not found. Please check llm-service.ts configuration.`
       );
     }
 
-    return provider.generateResponse(messages, { model: llmType });
+    const options: LLMOptions = { model: llmType };
+
+    return provider.generateResponse(messages, options);
   }
 }
 

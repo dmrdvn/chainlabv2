@@ -17,6 +17,10 @@ import Alert from '@mui/material/Alert';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { toast } from 'sonner';
 import { Iconify } from 'src/components/iconify';
+import { keyframes } from '@mui/system';
+import Tooltip from '@mui/material/Tooltip';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ExpandingActionsButton from 'src/components/expanding-actions-button';
 
 import Editor, { Monaco, loader } from '@monaco-editor/react';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
@@ -35,6 +39,22 @@ import { useProjectFileContent } from 'src/hooks/projects/use-project-files-quer
 import type { ProjectFile } from 'src/types/project';
 import type { SimplifiedCompilationData } from 'src/sections/contract-editor/view/contract-editor-view';
 
+const REPLICA_UUID_FROM_ENV = process.env.NEXT_PUBLIC_REPLICA_UUID || '';
+const SENSAY_DYNAMIC_MODEL_ID = REPLICA_UUID_FROM_ENV ? `sensay-${REPLICA_UUID_FROM_ENV}` : null;
+
+const REPLICA2_UUID_FROM_ENV = process.env.NEXT_PUBLIC_REPLICA2_UUID || '';
+const SENSAY_AUDITOR_MODEL_ID = REPLICA2_UUID_FROM_ENV ? `sensay-${REPLICA2_UUID_FROM_ENV}` : null;
+
+// Dalga animasyonu için keyframes
+const wave = keyframes`
+  0%, 60%, 100% {
+    transform: initial;
+  }
+  30% {
+    transform: translateY(-7px);
+  }
+`;
+
 interface IdeChatPanelProps {
   onClose?: () => void;
   projectName?: string;
@@ -46,14 +66,27 @@ interface IdeChatPanelProps {
   isCompiling?: boolean; // Derleme yapılıyor mu?
 }
 
-// LLM Model names
 type LLMModelType =
   | 'gpt-4o'
   | 'gpt-3.5-turbo'
   | 'claude-3.5-sonnet'
   | 'claude-3.7-sonnet'
   | 'gemini-2.5-pro'
-  | 'gemini-2.5-flash';
+  | 'gemini-2.5-flash'
+  // Sensay model ID'leri dinamik olduğu için burada listelenmeyecek,
+  // ancak Select bileşeninin değeri bu stringlerden biri olabilir.
+  | string; // Dinamik Sensay ID'lerini kapsamak için genişletiyoruz
+
+// LLM'ler için açıklamalar (sadece statik olanlar için)
+const llmDescriptions: Partial<Record<LLMModelType, string>> = {
+  // Partial yaptık
+  'gpt-4o': 'OpenAI: Latest flagship model, great for complex tasks, reasoning, and chat.',
+  'gpt-3.5-turbo': 'OpenAI: Fast and cost-effective model, good for general tasks and chat.',
+  'claude-3.5-sonnet': 'Anthropic: Strong performance for its size, excels at reasoning and chat.',
+  'claude-3.7-sonnet': 'Anthropic: Next-gen model with improved capabilities.',
+  'gemini-2.5-pro': 'Google: Highly capable multimodal model with a long context window.',
+  'gemini-2.5-flash': 'Google: Fast and versatile multimodal model for various tasks.',
+};
 
 export default function IdeChatPanel({
   onClose,
@@ -66,7 +99,8 @@ export default function IdeChatPanel({
   isCompiling,
 }: IdeChatPanelProps) {
   const theme = useTheme();
-  const [selectedLlm, setSelectedLlm] = useState<LLMModelType>('gpt-4o');
+  const initialSelectedLlm = SENSAY_DYNAMIC_MODEL_ID || 'gpt-4o';
+  const [selectedLlm, setSelectedLlm] = useState<LLMModelType>(initialSelectedLlm as LLMModelType);
   const [inputText, setInputText] = useState('');
   const [chatMode, setChatMode] = useState<'assistant' | 'support'>('support');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
@@ -171,7 +205,7 @@ export default function IdeChatPanel({
       {
         id: assistantPlaceHolderId,
         role: 'assistant',
-        content: '...',
+        content: 'PENDING_PLACEHOLDER',
         timestamp: new Date().toISOString(),
         status: 'pending_response',
       },
@@ -288,7 +322,7 @@ export default function IdeChatPanel({
   return (
     <Box
       sx={{
-        width: 300,
+        width: 320,
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
@@ -412,7 +446,50 @@ export default function IdeChatPanel({
                 px: theme.spacing(0), // Sağ/sol padding azaltıldı
               }}
             >
-              {msg.role === 'assistant' && msg.status !== 'error' ? (
+              {msg.role === 'assistant' &&
+              msg.status === 'pending_response' &&
+              msg.content === 'PENDING_PLACEHOLDER' ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', p: 1, pl: 0 }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: theme.palette.text.secondary,
+                      display: 'inline-block',
+                      animation: `${wave} 1.3s ease-in-out infinite`,
+                      mx: 0.5, // Noktalar arası boşluk
+                    }}
+                  />
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: theme.palette.text.secondary,
+                      display: 'inline-block',
+                      animation: `${wave} 1.3s ease-in-out infinite`,
+                      animationDelay: '0.2s', // İkinci nokta için gecikme
+                      mx: 0.5,
+                    }}
+                  />
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      backgroundColor: theme.palette.text.secondary,
+                      display: 'inline-block',
+                      animation: `${wave} 1.3s ease-in-out infinite`,
+                      animationDelay: '0.4s', // Üçüncü nokta için gecikme
+                      mx: 0.5,
+                    }}
+                  />
+                </Box>
+              ) : msg.role === 'assistant' && msg.status !== 'error' ? (
                 (() => {
                   const content = msg.content;
                   const codeBlockStartIndex = content.indexOf('```');
@@ -587,6 +664,10 @@ export default function IdeChatPanel({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 1 }}>
+          <ExpandingActionsButton
+            onAttachFile={() => toast.info('The file attachment feature will be available soon.')}
+            onStartVoiceInput={() => toast.info('The voice chat feature will be available soon.')}
+          />
           <TextField
             fullWidth
             multiline
@@ -607,9 +688,10 @@ export default function IdeChatPanel({
             }}
             sx={{
               mr: 1,
+              ml: 1,
               flexGrow: 1,
               '& .MuiOutlinedInput-root': {
-                fontSize: '0.875rem', // Giriş alanı yazı boyutu
+                fontSize: '0.875rem',
               },
             }}
           />
@@ -618,11 +700,7 @@ export default function IdeChatPanel({
             onClick={handleSend}
             disabled={isLoading || !inputText.trim() || chatMode === 'assistant'}
           >
-            {isLoading && chatMessages.some((m) => m.status === 'pending_response') ? (
-              <CircularProgress size={22} />
-            ) : (
-              <Iconify icon="mdi:send" />
-            )}
+            <Iconify icon="mdi:send" />
           </IconButton>
         </Box>
 
@@ -637,7 +715,7 @@ export default function IdeChatPanel({
             sx={{
               bgcolor: theme.palette.background.paper,
               '& .MuiToggleButton-root': {
-                fontSize: '0.75rem', // Buton yazı boyutu
+                fontSize: '0.50rem', // Buton yazı boyutu
                 py: 0.5,
                 px: 1,
               },
@@ -665,29 +743,146 @@ export default function IdeChatPanel({
                   fontSize: '0.8rem', // LLM seçici yazı boyutu
                   textAlign: 'right',
                   marginRight: '0.5rem',
+                  display: 'flex', // İkonu yanına almak için
+                  alignItems: 'center', // İkonu yanına almak için
                 },
                 '& .MuiSvgIcon-root': {
                   fontSize: '1rem',
                 },
               }}
             >
-              <MenuItem value="gpt-4o" sx={{ fontSize: '0.8rem' }}>
+              {/* GPT Modelleri */}
+              <MenuItem
+                value="gpt-4o"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 GPT-4o
+                <Tooltip title={llmDescriptions['gpt-4o']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
-              <MenuItem value="gpt-3.5-turbo" sx={{ fontSize: '0.8rem' }}>
+              <MenuItem
+                value="gpt-3.5-turbo"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 GPT-3.5 Turbo
+                <Tooltip title={llmDescriptions['gpt-3.5-turbo']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
-              <MenuItem disabled value="claude-3.5-sonnet" sx={{ fontSize: '0.8rem' }}>
+
+              {/* Sensay Modelleri */}
+              {SENSAY_DYNAMIC_MODEL_ID && (
+                <MenuItem
+                  value={SENSAY_DYNAMIC_MODEL_ID}
+                  sx={{
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  Sensay (General)
+                  <Tooltip
+                    title="Sensay: Fine-tuned with Claude 3.7 Sonnet for general contract/program development support. (Free until May 30, 2025)"
+                    placement="top-start"
+                  >
+                    <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                  </Tooltip>
+                </MenuItem>
+              )}
+              {SENSAY_AUDITOR_MODEL_ID && (
+                <MenuItem
+                  value={SENSAY_AUDITOR_MODEL_ID}
+                  sx={{
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  Sensay (Auditor)
+                  <Tooltip
+                    title="Sensay: Fine-tuned AI specialized for smart contract/program auditing. (Free until May 30, 2025)"
+                    placement="top-start"
+                  >
+                    <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                  </Tooltip>
+                </MenuItem>
+              )}
+
+              {/* Claude Modelleri */}
+              <MenuItem
+                value="claude-3.5-sonnet"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+                disabled
+              >
                 Claude 3.5 Sonnet
+                <Tooltip title={llmDescriptions['claude-3.5-sonnet']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
-              <MenuItem disabled value="claude-3.7-sonnet" sx={{ fontSize: '0.8rem' }}>
+              <MenuItem
+                value="claude-3.7-sonnet"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+                disabled
+              >
                 Claude 3.7 Sonnet
+                <Tooltip title={llmDescriptions['claude-3.7-sonnet']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
-              <MenuItem disabled value="gemini-2.5-pro" sx={{ fontSize: '0.8rem' }}>
+
+              {/* Gemini Modelleri */}
+              <MenuItem
+                value="gemini-2.5-pro"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+                disabled
+              >
                 Gemini 2.5 Pro
+                <Tooltip title={llmDescriptions['gemini-2.5-pro']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
-              <MenuItem disabled value="gemini-2.5-flash" sx={{ fontSize: '0.8rem' }}>
+              <MenuItem
+                value="gemini-2.5-flash"
+                sx={{
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+                disabled
+              >
                 Gemini 2.5 Flash
+                <Tooltip title={llmDescriptions['gemini-2.5-flash']} placement="top-start">
+                  <InfoOutlinedIcon sx={{ fontSize: '1rem', ml: 0.5, color: 'text.disabled' }} />
+                </Tooltip>
               </MenuItem>
             </Select>
           </FormControl>

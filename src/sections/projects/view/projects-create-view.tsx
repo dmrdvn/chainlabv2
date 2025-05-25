@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { paths } from 'src/routes/paths';
 
 import { useCreateProject } from 'src/hooks/projects';
+import { useCurrentProject } from 'src/hooks/projects/use-project-utils';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -20,6 +21,7 @@ export function ProjectsCreateView() {
 
   // Proje oluşturma hook'unu kullan
   const { createProject, loading: isCreating, error } = useCreateProject();
+  const { setCurrentProject } = useCurrentProject();
   const [createSuccess, setCreateSuccess] = useState(false);
 
   // Error tipini uyumlu hale getir
@@ -51,7 +53,11 @@ export function ProjectsCreateView() {
         isEditing={false}
         onCreateProject={async (data) => {
           const result = await createProject(data);
-          if (result) {
+          if (result && result.id) {
+            setCreateSuccess(true);
+            setCurrentProject(result.id, 'project_create');
+          } else if (result) {
+            console.warn('Project created, but ID not found in expected structure:', result);
             setCreateSuccess(true);
           }
         }}

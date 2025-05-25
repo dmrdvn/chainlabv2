@@ -1,5 +1,3 @@
-// This file will store system prompts and initial messages for the LLM.
-
 export const baseSystemPrompt =
   process.env.NEXT_PUBLIC_AI_SYSTEM_PROMPT ||
   `WARNING: NEXT_PUBLIC_AI_SYSTEM_PROMPT environment variable not set. Using a default prompt.\n\nPolitely inform the user that the service is currently unavailable.`;
