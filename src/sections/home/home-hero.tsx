@@ -223,7 +223,7 @@ export function HomeHero({ sx, ...other }: BoxProps) {
       </m.div>
 
       <Box sx={{ gap: 2, display: 'flex' }}>
-        {['ethereum', 'base', 'bsc', 'opbnb'].map((platform) => (
+        {['ethereum', 'base', 'bsc', 'opbnb', 'solana'].map((platform) => (
           <m.div {...motionProps} key={platform}>
             <Box
               component="img"

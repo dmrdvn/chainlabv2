@@ -23,9 +23,13 @@ import { getLanguageFromPath } from 'src/components/monaco-editor/config';
 
 import IdeWelcome from './ide-welcome';
 import IdeSettingsPanel from './ide-settings-panel';
+import LlmSettingsPanel from './llm-settings-panel';
 
 // Special file ID for settings panel
 export const SETTINGS_FILE_ID = 'settings:general';
+
+// Special file ID for LLM settings panel
+export const LLM_SETTINGS_FILE_ID = 'settings:llm';
 
 // Create a virtual file for the settings panel
 export const createSettingsFile = (): ProjectFile => ({
@@ -35,6 +39,21 @@ export const createSettingsFile = (): ProjectFile => ({
   parent_id: null,
   file_name: 'settings.json',
   file_path: 'settings.json',
+  is_directory: false,
+  content: null,
+  mime_type: 'application/json',
+  created_at: '',
+  updated_at: '',
+});
+
+// Create a virtual file for the LLM settings panel
+export const createLlmSettingsFile = (): ProjectFile => ({
+  id: LLM_SETTINGS_FILE_ID,
+  project_id: '',
+  project_version_id: '',
+  parent_id: null,
+  file_name: 'llm.settings.json',
+  file_path: 'llm.settings.json',
   is_directory: false,
   content: null,
   mime_type: 'application/json',
@@ -214,7 +233,9 @@ export default function IdeEditorArea({
               const fileName =
                 file.id === SETTINGS_FILE_ID
                   ? 'Settings'
-                  : file.file_path.split('/').pop() || file.file_path; // Use full path as fallback
+                  : file.id === LLM_SETTINGS_FILE_ID
+                    ? 'LLM Settings'
+                    : file.file_path.split('/').pop() || file.file_path; // Use full path as fallback
 
               return (
                 <Tab
@@ -233,6 +254,13 @@ export default function IdeEditorArea({
                       {file.id === SETTINGS_FILE_ID ? (
                         <Icon
                           icon="mdi:cog-outline"
+                          width={16}
+                          height={16}
+                          style={{ marginRight: 6 }}
+                        />
+                      ) : file.id === LLM_SETTINGS_FILE_ID ? (
+                        <Icon
+                          icon="mdi:robot-happy-outline"
                           width={16}
                           height={16}
                           style={{ marginRight: 6 }}
@@ -322,6 +350,8 @@ export default function IdeEditorArea({
         {/* Ayarlar paneli mi yoksa editör mü gösterilecek? */}
         {activeFileId === SETTINGS_FILE_ID ? (
           <IdeSettingsPanel />
+        ) : activeFileId === LLM_SETTINGS_FILE_ID ? (
+          <LlmSettingsPanel />
         ) : (
           // Aktif dosya bir ayar dosyası değilse Monaco Editor'ı render et
           <MonacoEditor

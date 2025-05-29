@@ -26,7 +26,7 @@ import { useAuthContext } from 'src/auth/hooks';
 
 import { IdeDeploy } from './ide-deploy';
 import { IdeCompiler } from './ide-compiler';
-import { createSettingsFile } from './ide-editor-area';
+import { createSettingsFile, createLlmSettingsFile } from './ide-editor-area';
 
 import type { DeployedEvmContractInfo, DeployedSolanaProgramInfo } from './ide-deploy';
 import type {
@@ -45,8 +45,6 @@ interface IdeSidebarProps {
   onFileSelect: (file: ProjectFile) => void;
   files: ProjectFile[] | null | undefined;
   isLoading: boolean;
-  onSettingsClick?: () => void;
-  onOpenSettingsPanel?: () => void;
   platform?: 'evm' | 'solana' | null;
   onCompileEvm: (settings: EvmCompilerSettings) => Promise<void>;
   onCompileSolana: (settings: SolanaCompilerSettings) => Promise<void>;
@@ -112,8 +110,6 @@ export default function IdeSidebar({
   onFileSelect,
   files,
   isLoading,
-  onSettingsClick,
-  onOpenSettingsPanel,
   platform,
   onCompileEvm,
   onCompileSolana,
@@ -238,16 +234,14 @@ export default function IdeSidebar({
   const getItemLabel = useCallback((item: FileTreeNode) => item.name, []);
   const getItemId = useCallback((item: FileTreeNode) => item.id, []);
 
-  const handleSettingsClick = () => {
-    if (onSettingsClick) {
-      onSettingsClick();
-    }
-    if (onOpenSettingsPanel) {
-      onOpenSettingsPanel();
-    } else {
-      const settingsFile = createSettingsFile();
-      onFileSelect(settingsFile);
-    }
+  const handleGeneralSettingsClick = () => {
+    const settingsFile = createSettingsFile();
+    onFileSelect(settingsFile);
+  };
+
+  const handleLlmSettingsClick = () => {
+    const llmSettingsFile = createLlmSettingsFile();
+    onFileSelect(llmSettingsFile);
   };
 
   return (
@@ -661,7 +655,7 @@ export default function IdeSidebar({
                 variant="contained"
                 color="primary"
                 startIcon={<Iconify icon="mdi:cog-outline" />}
-                onClick={handleSettingsClick}
+                onClick={handleGeneralSettingsClick}
                 sx={{
                   textTransform: 'none',
                   fontWeight: 500,
@@ -686,6 +680,22 @@ export default function IdeSidebar({
                 Integrations
               </Typography>
               <Stack spacing={1.5}>
+                <Button
+                  fullWidth
+                  startIcon={<Iconify icon="mdi:robot-happy-outline" />}
+                  onClick={handleLlmSettingsClick}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    px: 2,
+                    fontWeight: 'normal',
+                    color: 'text.primary',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    },
+                  }}
+                >
+                  LLM Settings
+                </Button>
                 <Button
                   fullWidth
                   startIcon={<Iconify icon="mdi:code-braces" />}

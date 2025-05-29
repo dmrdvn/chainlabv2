@@ -7,7 +7,9 @@ import Badge from '@mui/material/Badge';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import { useColorScheme } from '@mui/material/styles';
+import Avatar from '@mui/material/Avatar';
+import Chip from '@mui/material/Chip';
+import { useColorScheme, alpha, useTheme } from '@mui/material/styles';
 
 import { themeConfig } from 'src/theme/theme-config';
 import { primaryColorPresets } from 'src/theme/with-settings';
@@ -25,6 +27,7 @@ import { FontSizeOptions, FontFamilyOptions } from 'src/components/settings/draw
 export default function IdeSettingsPanel() {
   const settings = useSettingsContext();
   const { mode, setMode, systemMode } = useColorScheme();
+  const theme = useTheme();
 
   useEffect(() => {
     if (mode === 'system' && systemMode) {
@@ -173,55 +176,93 @@ export default function IdeSettingsPanel() {
         maxWidth: '100%',
       }}
     >
+      {/* Modern Header with Gradient */}
       <Box
         sx={{
-          py: 1.5,
-          px: 3,
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+          py: 2,
+          px: { xs: 2, md: 4 },
           display: 'flex',
           alignItems: 'center',
-          borderBottom: 1,
-          borderColor: 'divider',
-          width: '100%',
-          bgcolor: (theme) =>
-            theme.palette.mode === 'dark'
-              ? theme.palette.grey[800]
-              : theme.palette.background.neutral,
-          height: 50,
-          boxShadow: (theme) =>
-            `0 1px 2px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)'}`,
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          backdropFilter: 'blur(10px)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background:
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(139, 69, 255, 0.05) 0%, rgba(59, 130, 246, 0.03) 100%)'
+                : 'linear-gradient(135deg, rgba(139, 69, 255, 0.03) 0%, rgba(59, 130, 246, 0.02) 100%)',
+            zIndex: -1,
+          },
         }}
       >
-        <Typography
-          variant="subtitle1"
-          sx={{
-            flexGrow: 1,
-            fontWeight: 600,
-            letterSpacing: 0.2,
-            color: (theme) =>
-              theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.grey[800],
-          }}
-        >
-          General Settings
-        </Typography>
-
-        <Tooltip title="Reset all">
-          <IconButton
-            onClick={handleReset}
-            size="small"
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar
             sx={{
-              color: (theme) =>
-                theme.palette.mode === 'dark' ? theme.palette.grey[400] : theme.palette.grey[600],
-              '&:hover': {
-                bgcolor: (theme) =>
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-              },
+              bgcolor: 'primary.main',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              width: 42,
+              height: 42,
+              boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
             }}
           >
-            <Badge color="error" variant="dot" invisible={!settings.canReset}>
-              <Iconify icon="solar:restart-bold" width={20} height={20} />
-            </Badge>
-          </IconButton>
-        </Tooltip>
+            <Iconify icon="mdi:cog-outline" width={24} />
+          </Avatar>
+          <Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: -0.5,
+                mb: 0.2,
+                fontSize: '1.3rem',
+              }}
+            >
+              General Settings
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 500,
+                fontSize: '0.85rem',
+              }}
+            >
+              Customize your platform settings
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Reset all settings" arrow>
+            <IconButton
+              onClick={handleReset}
+              size="small"
+              sx={{
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                color: 'error.main',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.2),
+                  transform: 'scale(1.1)',
+                },
+              }}
+            >
+              <Badge color="error" variant="dot" invisible={!settings.canReset}>
+                <Iconify icon="solar:restart-bold" width={18} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <Scrollbar sx={{ flexGrow: 1 }}>

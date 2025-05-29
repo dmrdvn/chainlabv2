@@ -65,9 +65,10 @@ export function useProjectFileHierarchy(projectId: string | null) {
 export function useProjectFileContent(fileId: string | null) {
   // Import SETTINGS_FILE_ID from contract editor
   const SETTINGS_FILE_ID = 'settings:general';
+  const LLM_SETTINGS_FILE_ID = 'settings:llm';
 
   // Only set key if it's a valid fileId and not the settings file
-  const shouldFetch = fileId && fileId !== SETTINGS_FILE_ID;
+  const shouldFetch = fileId && fileId !== SETTINGS_FILE_ID && fileId !== LLM_SETTINGS_FILE_ID;
   const key = shouldFetch ? ['projectFileContent', fileId] : null;
 
   // Using a stable fetcher function reference

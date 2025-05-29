@@ -45,6 +45,18 @@ const SENSAY_DYNAMIC_MODEL_ID = REPLICA_UUID_FROM_ENV ? `sensay-${REPLICA_UUID_F
 const REPLICA2_UUID_FROM_ENV = process.env.NEXT_PUBLIC_REPLICA2_UUID || '';
 const SENSAY_AUDITOR_MODEL_ID = REPLICA2_UUID_FROM_ENV ? `sensay-${REPLICA2_UUID_FROM_ENV}` : null;
 
+// localStorage'dan okunacak kullanıcı replikaları için interface
+interface UserReplica {
+  id: string; // Sensay UUID
+  name: string;
+  model: string; // base model id
+  systemPrompt?: string;
+  greeting?: string;
+  createdAt: string;
+}
+
+const USER_REPLICAS_LOCAL_STORAGE_KEY = 'chainlab_user_llm_replicas';
+
 // Dalga animasyonu için keyframes
 const wave = keyframes`
   0%, 60%, 100% {
@@ -73,13 +85,9 @@ type LLMModelType =
   | 'claude-3.7-sonnet'
   | 'gemini-2.5-pro'
   | 'gemini-2.5-flash'
-  // Sensay model ID'leri dinamik olduğu için burada listelenmeyecek,
-  // ancak Select bileşeninin değeri bu stringlerden biri olabilir.
-  | string; // Dinamik Sensay ID'lerini kapsamak için genişletiyoruz
+  | string;
 
-// LLM'ler için açıklamalar (sadece statik olanlar için)
 const llmDescriptions: Partial<Record<LLMModelType, string>> = {
-  // Partial yaptık
   'gpt-4o': 'OpenAI: Latest flagship model, great for complex tasks, reasoning, and chat.',
   'gpt-3.5-turbo': 'OpenAI: Fast and cost-effective model, good for general tasks and chat.',
   'claude-3.5-sonnet': 'Anthropic: Strong performance for its size, excels at reasoning and chat.',
@@ -116,6 +124,7 @@ export default function IdeChatPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFileContent, setActiveFileContent] = useState<string | null>(null);
+  const [userDefinedReplicas, setUserDefinedReplicas] = useState<UserReplica[]>([]);
 
   const messagesEndRef = useRef<null | HTMLDivElement>(null); // Otomatik scroll için
   const editorRef = useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null);
@@ -129,6 +138,37 @@ export default function IdeChatPanel({
       setActiveFileContent(null);
     }
   }, [activeEditorFileData, activeEditorFileId]);
+
+  useEffect(() => {
+    const loadReplicas = () => {
+      try {
+        const storedUserReplicas = localStorage.getItem(USER_REPLICAS_LOCAL_STORAGE_KEY);
+        if (storedUserReplicas) {
+          const parsedReplicas: UserReplica[] = JSON.parse(storedUserReplicas);
+          if (Array.isArray(parsedReplicas)) {
+            setUserDefinedReplicas(parsedReplicas);
+          } else {
+            setUserDefinedReplicas([]);
+          }
+        } else {
+          setUserDefinedReplicas([]);
+        }
+      } catch (e) {
+        console.error('Failed to load user-defined replicas from localStorage:', e);
+        setUserDefinedReplicas([]);
+      }
+    };
+
+    loadReplicas(); // Initial load
+
+    // Listen for custom event
+    window.addEventListener('replicasUpdated', loadReplicas);
+
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener('replicasUpdated', loadReplicas);
+    };
+  }, []);
 
   const handleMonacoEditorBeforeMount = (monacoInstance: Monaco) => {
     defineMonacoThemes(monacoInstance, theme);
@@ -331,7 +371,6 @@ export default function IdeChatPanel({
         backgroundColor: theme.palette.background.paper,
       }}
     >
-      {/* Header */}
       <Box
         sx={{
           px: 1,
@@ -382,8 +421,8 @@ export default function IdeChatPanel({
               sx={{
                 position: 'absolute',
                 top: theme.spacing(1),
-                left: theme.spacing(1), // Padding azaltıldı
-                right: theme.spacing(1), // Padding azaltıldı
+                left: theme.spacing(1),
+                right: theme.spacing(1),
                 zIndex: 1,
               }}
             >
@@ -441,9 +480,9 @@ export default function IdeChatPanel({
 
             <Box
               sx={{
-                pt: theme.spacing(2), // Üst bandın yüksekliği için her zaman padding
-                pb: theme.spacing(0), // Alt padding azaltıldı
-                px: theme.spacing(0), // Sağ/sol padding azaltıldı
+                pt: theme.spacing(2),
+                pb: theme.spacing(0),
+                px: theme.spacing(0),
               }}
             >
               {msg.role === 'assistant' &&
@@ -650,17 +689,16 @@ export default function IdeChatPanel({
           </Alert>
         )}
 
-      {/* Giriş Alanı */}
       <Box
         sx={{
           px: 2,
           pt: 1.5,
-          pb: 1.5, // Padding ayarlandı
+          pb: 1.5,
           borderTop: `1px solid ${theme.palette.divider}`,
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
-          bgcolor: theme.palette.background.neutral, // Arkaplan rengi
+          bgcolor: theme.palette.background.neutral,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 1 }}>
@@ -671,13 +709,13 @@ export default function IdeChatPanel({
           <TextField
             fullWidth
             multiline
-            maxRows={4} // Maksimum satır sayısı
+            maxRows={4}
             variant="outlined"
-            size="small" // Boyut küçültüldü
+            size="small"
             placeholder={isLoading ? 'AI is thinking...' : 'Ask AI...'}
             value={inputText}
             onChange={handleInputChange}
-            disabled={isLoading || chatMode === 'assistant'} // Yüklenirken veya Assistant modunda (ileride) disable
+            disabled={isLoading || chatMode === 'assistant'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -715,7 +753,7 @@ export default function IdeChatPanel({
             sx={{
               bgcolor: theme.palette.background.paper,
               '& .MuiToggleButton-root': {
-                fontSize: '0.50rem', // Buton yazı boyutu
+                fontSize: '0.50rem',
                 py: 0.5,
                 px: 1,
               },
@@ -743,8 +781,8 @@ export default function IdeChatPanel({
                   fontSize: '0.8rem', // LLM seçici yazı boyutu
                   textAlign: 'right',
                   marginRight: '0.5rem',
-                  display: 'flex', // İkonu yanına almak için
-                  alignItems: 'center', // İkonu yanına almak için
+                  display: 'flex',
+                  alignItems: 'center',
                 },
                 '& .MuiSvgIcon-root': {
                   fontSize: '1rem',
@@ -820,6 +858,58 @@ export default function IdeChatPanel({
                   </Tooltip>
                 </MenuItem>
               )}
+
+              {/* Kullanıcının Oluşturduğu Sensay Replikaları */}
+              {userDefinedReplicas.map((replica) => (
+                <MenuItem
+                  key={`sensay-${replica.id}`}
+                  value={`sensay-${replica.id}`}
+                  sx={{
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flex: 1,
+                      minWidth: 0,
+                      mr: 1,
+                    }}
+                  >
+                    <Tooltip
+                      title={`${replica.name} (User-created replica. Base: ${replica.model})`}
+                      placement="top-start"
+                      arrow
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: '0.8rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '110px',
+                        }}
+                      >
+                        Sensay: {replica.name}
+                      </Typography>
+                    </Tooltip>
+                  </Box>
+                  <Tooltip
+                    title={`User-created replica. Base: ${replica.model}. ID: ${replica.id || 'Not set'}`}
+                    placement="top-start"
+                  >
+                    <InfoOutlinedIcon
+                      sx={{ fontSize: '1rem', color: 'text.disabled', flexShrink: 0 }}
+                    />
+                  </Tooltip>
+                </MenuItem>
+              ))}
 
               {/* Claude Modelleri */}
               <MenuItem
