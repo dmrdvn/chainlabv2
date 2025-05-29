@@ -6,9 +6,9 @@
 
 ## 🎥 Video Resources
 
-### 🤖 **Featured: Sensay Replikalar ile Özelleştirilmiş LLM Kullanımı**
+### 🤖 **Featured: Using Customized LLM with Sensay Replicas**
 
-**Watch: [Sensay Custom LLM/Replica Usage](https://youtu.be/VfuzZ9h1ATc)**
+[Sensay Custom LLM/Replica Usage](https://youtu.be/VfuzZ9h1ATc)\*\*
 
 ### 📺 **ChainLab Introduction & Deep Dive Series**
 
