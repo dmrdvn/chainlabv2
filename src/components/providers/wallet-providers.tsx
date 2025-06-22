@@ -16,9 +16,7 @@ interface WalletProvidersProps {
 export function WalletProviders({ children }: WalletProvidersProps) {
   return (
     <EvmWalletProviders>
-      <SolanaWalletProviders>
-        {children}
-      </SolanaWalletProviders>
+      <SolanaWalletProviders>{children}</SolanaWalletProviders>
     </EvmWalletProviders>
   );
 }

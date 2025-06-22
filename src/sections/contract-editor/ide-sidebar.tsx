@@ -28,7 +28,11 @@ import { IdeDeploy } from './ide-deploy';
 import { IdeCompiler } from './ide-compiler';
 import { createSettingsFile, createLlmSettingsFile } from './ide-editor-area';
 
-import type { DeployedEvmContractInfo, DeployedSolanaProgramInfo } from './ide-deploy';
+import type {
+  DeployedEvmContractInfo,
+  DeployedSolanaProgramInfo,
+  DeployedStellarContractInfo,
+} from './ide-deploy';
 import type {
   ArtifactForDeploy,
   EvmCompilerSettings,
@@ -65,13 +69,21 @@ interface IdeSidebarProps {
     walletAddress: string;
     artifactToDeploy: ArtifactForDeploy;
   }) => Promise<void>;
+  onDeployStellar: (deployConfig: {
+    environmentId: string;
+    walletAddress: string;
+    artifactToDeploy: ArtifactForDeploy;
+  }) => Promise<void>;
   isDeploying: boolean;
   deployedEvmContracts: DeployedEvmContractInfo[];
   deployedSolanaPrograms: DeployedSolanaProgramInfo[];
+  deployedStellarContracts: DeployedStellarContractInfo[];
   expandedEvmAccordion: string | false;
   onEvmAccordionChange: (panel: string, isExpanded: boolean) => void;
   expandedSolanaAccordion: string | false;
   onSolanaAccordionChange: (panel: string, isExpanded: boolean) => void;
+  expandedStellarAccordion: string | false;
+  onStellarAccordionChange: (panel: string, isExpanded: boolean) => void;
   compiledArtifactsForDeploy?: ArtifactForDeploy[];
   projectName?: string;
 }
@@ -120,13 +132,17 @@ export default function IdeSidebar({
   simplifiedCompilationData,
   onDeployEvm,
   onDeploySolana,
+  onDeployStellar,
   isDeploying,
   deployedEvmContracts,
   deployedSolanaPrograms,
+  deployedStellarContracts,
   expandedEvmAccordion,
   onEvmAccordionChange,
   expandedSolanaAccordion,
   onSolanaAccordionChange,
+  expandedStellarAccordion,
+  onStellarAccordionChange,
   compiledArtifactsForDeploy,
   projectName,
 }: IdeSidebarProps) {
@@ -472,13 +488,17 @@ export default function IdeSidebar({
               platform={platform ?? null}
               onDeployEvm={onDeployEvm}
               onDeploySolana={onDeploySolana}
+              onDeployStellar={onDeployStellar}
               isDeploying={isDeploying}
               deployedEvmContracts={deployedEvmContracts}
               deployedSolanaPrograms={deployedSolanaPrograms}
+              deployedStellarContracts={deployedStellarContracts}
               expandedEvmAccordion={expandedEvmAccordion}
               onEvmAccordionChange={onEvmAccordionChange}
               expandedSolanaAccordion={expandedSolanaAccordion}
               onSolanaAccordionChange={onSolanaAccordionChange}
+              expandedStellarAccordion={expandedStellarAccordion}
+              onStellarAccordionChange={onStellarAccordionChange}
               compiledArtifactsForDeploy={compiledArtifactsForDeploy ?? []}
             />
           </Box>

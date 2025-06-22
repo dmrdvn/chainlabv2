@@ -41,6 +41,11 @@ import {
   type ViemEvmContractArtifacts,
   type DeployViemEvmContractResult,
 } from 'src/utils/ethereum-deployer';
+import {
+  deployStellarContract,
+  type StellarDeploymentConfig,
+  type StellarDeploymentResult,
+} from 'src/utils/stellar-deployer';
 import { parseUnits } from 'viem';
 
 import { useAuthContext } from 'src/auth/hooks';
@@ -52,7 +57,11 @@ import IdeEditorArea from '../ide-editor-area';
 import { ActivityBar } from '../ide-activity-bar';
 
 // Import deploy types
-import type { DeployedEvmContractInfo, DeployedSolanaProgramInfo } from '../ide-deploy';
+import type {
+  DeployedEvmContractInfo,
+  DeployedSolanaProgramInfo,
+  DeployedStellarContractInfo,
+} from '../ide-deploy';
 
 // Dynamically import IdePanel
 /* import dynamic from 'next/dynamic';
@@ -165,10 +174,16 @@ export default function ContractEditorView() {
   const [deployedSolanaProgramsList, setDeployedSolanaProgramsList] = useState<
     DeployedSolanaProgramInfo[]
   >([]);
+  const [deployedStellarContractsList, setDeployedStellarContractsList] = useState<
+    DeployedStellarContractInfo[]
+  >([]);
   const [expandedEvmAccordionDeploy, setExpandedEvmAccordionDeploy] = useState<string | false>(
     false
   );
   const [expandedSolanaAccordionDeploy, setExpandedSolanaAccordionDeploy] = useState<
+    string | false
+  >(false);
+  const [expandedStellarAccordionDeploy, setExpandedStellarAccordionDeploy] = useState<
     string | false
   >(false);
 
@@ -258,14 +273,18 @@ export default function ContractEditorView() {
                 });
               }
             } else if (currentProjectDetails?.platform === 'stellar') {
-              const { wasmBase64, contractName } = updatedCompilation.artifacts as any;
-              if (wasmBase64 && contractName) {
+              // Stellar artifacts format: { "contractName": { "wasm": "base64..." } }
+              const artifactKeys = Object.keys(updatedCompilation.artifacts);
+              const firstContractName = artifactKeys[0]; // Get the first contract name
+
+              if (firstContractName && updatedCompilation.artifacts[firstContractName]?.wasm) {
+                const contractArtifact = updatedCompilation.artifacts[firstContractName];
                 newArtifactsForDeploy.push({
-                  id: `${updatedCompilation.id}-${contractName}`,
-                  name: contractName,
+                  id: `${updatedCompilation.id}-${firstContractName}`,
+                  name: firstContractName,
                   platform: 'stellar',
                   fullArtifacts: updatedCompilation.artifacts,
-                  wasmBase64,
+                  wasmBase64: contractArtifact.wasm,
                 });
               }
             }
@@ -621,6 +640,73 @@ export default function ContractEditorView() {
   const handleSolanaDeployAccordionChange = useCallback((panel: string, isExpanded: boolean) => {
     setExpandedSolanaAccordionDeploy(isExpanded ? panel : false);
   }, []);
+
+  const handleRequestStellarDeploy = useCallback(
+    async (deployConfig: {
+      environmentId: string;
+      walletAddress: string;
+      artifactToDeploy: ArtifactForDeploy;
+    }) => {
+      console.log('[ContractEditorView] Requesting Stellar Deploy with config:', deployConfig);
+      setIsDeploying(true);
+
+      if (
+        !deployConfig.artifactToDeploy ||
+        !deployConfig.artifactToDeploy.fullArtifacts ||
+        !deployConfig.artifactToDeploy.wasmBase64
+      ) {
+        console.error(
+          '[ContractEditorView] Invalid or incomplete artifacts for Stellar deployment.'
+        );
+        toast.error('Cannot deploy: Contract WASM is missing.');
+        setIsDeploying(false);
+        return;
+      }
+
+      try {
+        toast.info('Deploying Stellar contract...');
+
+        // Gerçek Stellar deployment implementasyonu
+        const result = await deployStellarContract({
+          wasmBase64: deployConfig.artifactToDeploy.wasmBase64,
+          walletAddress: deployConfig.walletAddress,
+          environmentId: deployConfig.environmentId,
+          contractName: deployConfig.artifactToDeploy.name,
+        });
+
+        const newDeployment: DeployedStellarContractInfo = {
+          id: `deployedStellar-${Date.now()}`,
+          name: deployConfig.artifactToDeploy.name,
+          contractId: result.contractId,
+          network:
+            deployConfig.environmentId === 'testnet'
+              ? 'Stellar Testnet'
+              : deployConfig.environmentId === 'local_network'
+                ? 'Local Network'
+                : 'Browser Wallet',
+          timestamp: new Date().toLocaleString(),
+          txHash: result.transactionHash,
+        };
+
+        setDeployedStellarContractsList((prev) => [newDeployment, ...prev]);
+        setExpandedStellarAccordionDeploy(newDeployment.id);
+
+        toast.success(
+          `Contract deployed successfully! ID: ${newDeployment.contractId.substring(0, 8)}...`
+        );
+      } catch (error: any) {
+        console.error('[ContractEditorView] Error deploying Stellar contract:', error);
+        toast.error(`Stellar deployment failed: ${error.message || 'Unknown error'}`);
+      } finally {
+        setIsDeploying(false);
+      }
+    },
+    [projectId, user]
+  );
+
+  const handleStellarDeployAccordionChange = useCallback((panel: string, isExpanded: boolean) => {
+    setExpandedStellarAccordionDeploy(isExpanded ? panel : false);
+  }, []);
   // --- End of Deployment Logic ---
 
   // Create simplified data for the compiler view
@@ -793,13 +879,17 @@ export default function ContractEditorView() {
           simplifiedCompilationData={simplifiedCompilationForIde}
           onDeployEvm={handleRequestEvmDeploy}
           onDeploySolana={handleRequestSolanaDeploy}
+          onDeployStellar={handleRequestStellarDeploy}
           isDeploying={isDeploying}
           deployedEvmContracts={deployedEvmContractsList}
           deployedSolanaPrograms={deployedSolanaProgramsList}
+          deployedStellarContracts={deployedStellarContractsList}
           expandedEvmAccordion={expandedEvmAccordionDeploy}
           onEvmAccordionChange={handleEvmDeployAccordionChange}
           expandedSolanaAccordion={expandedSolanaAccordionDeploy}
           onSolanaAccordionChange={handleSolanaDeployAccordionChange}
+          expandedStellarAccordion={expandedStellarAccordionDeploy}
+          onStellarAccordionChange={handleStellarDeployAccordionChange}
           compiledArtifactsForDeploy={availableArtifactsForDeploy}
         />
       )}
