@@ -48,6 +48,15 @@ export interface DeployedSolanaProgramInfo {
   txHash?: string;
 }
 
+export interface DeployedStellarContractInfo {
+  id: string;
+  name: string;
+  contractId: string;
+  network: string;
+  timestamp: string;
+  txHash: string;
+}
+
 // --- Mock Data (Bu mock datalar bileşen içinde kalacak) ---
 // EVM
 const evmEnvironments = [
@@ -80,8 +89,31 @@ const mockSolanaWallets = {
   // Tarayıcı dışı ortamlar için
   local_validator: [{ address: 'Loc1V...def', name: 'Local Validator Wallet 1' }],
 };
-// Deploy edilecek programlar için mock data
-// const mockCompiledSolanaPrograms = [ /* ... */ ]; // KALDIRILDI
+
+// Stellar
+const stellarEnvironments = [
+  { id: 'testnet', name: 'Stellar Testnet' },
+  { id: 'local_network', name: 'Local Network' },
+  { id: 'browser', name: 'Browser Wallet (Freighter, xBull, etc.)' },
+];
+const mockStellarWallets = {
+  testnet: [
+    {
+      address: 'GCXMWUAUF37IWOOV2FREUC7SASLD4HFSM7VWGWTEQVBPSJP7HHZFVJDZ',
+      name: 'Testnet Account 1',
+    },
+    {
+      address: 'GDQOE23CFSUMSVQK4Y5JHPPYK73VYCNHZHA7ENKCV37P6SUEO6XQBKPP',
+      name: 'Testnet Account 2',
+    },
+  ],
+  local_network: [
+    {
+      address: 'GCKFBEIYTKP6RCZNVPH73XL7XFWTEOAO7GIBD6TQJDD4YWDMG4PQCXL',
+      name: 'Local Network Account',
+    },
+  ],
+};
 // --- End of Mock Data ---
 
 interface IdeDeployProps {
@@ -100,13 +132,21 @@ interface IdeDeployProps {
     walletAddress: string;
     artifactToDeploy: ArtifactForDeploy;
   }) => Promise<void>;
+  onDeployStellar: (deployConfig: {
+    environmentId: string;
+    walletAddress: string;
+    artifactToDeploy: ArtifactForDeploy;
+  }) => Promise<void>;
   isDeploying: boolean;
   deployedEvmContracts: DeployedEvmContractInfo[];
   deployedSolanaPrograms: DeployedSolanaProgramInfo[];
+  deployedStellarContracts: DeployedStellarContractInfo[];
   expandedEvmAccordion: string | false;
   onEvmAccordionChange: (panel: string, isExpanded: boolean) => void;
   expandedSolanaAccordion: string | false;
   onSolanaAccordionChange: (panel: string, isExpanded: boolean) => void;
+  expandedStellarAccordion: string | false;
+  onStellarAccordionChange: (panel: string, isExpanded: boolean) => void;
   compiledArtifactsForDeploy: ArtifactForDeploy[];
 }
 
@@ -114,13 +154,17 @@ export function IdeDeploy({
   platform,
   onDeployEvm,
   onDeploySolana,
+  onDeployStellar,
   isDeploying,
   deployedEvmContracts,
   deployedSolanaPrograms,
+  deployedStellarContracts,
   expandedEvmAccordion,
   onEvmAccordionChange,
   expandedSolanaAccordion,
   onSolanaAccordionChange,
+  expandedStellarAccordion,
+  onStellarAccordionChange,
   compiledArtifactsForDeploy,
 }: IdeDeployProps) {
   const theme = useTheme();
@@ -150,6 +194,10 @@ export function IdeDeploy({
 
   // Stellar (Soroban) States
   const [selectedArtifactIdStellar, setSelectedArtifactIdStellar] = useState<string>('');
+  const [environmentStellar, setEnvironmentStellar] = useState('testnet');
+  const [walletAddressStellar, setWalletAddressStellar] = useState(
+    'GCXMWUAUF37IWOOV2FREUC7SASLD4HFSM7VWGWTEQVBPSJP7HHZFVJDZ'
+  );
 
   // EVM Deploy Buton Handler'ı
   const handleDeployEvmClick = () => {
@@ -266,6 +314,35 @@ export function IdeDeploy({
   const handleSolanaAccordionChangeInternal =
     (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
       onSolanaAccordionChange(panel, isExpanded); // Props'tan geleni çağır
+    };
+
+  // Stellar Deploy Buton Handler'ı
+  const handleDeployStellarClick = () => {
+    const selectedArtifact = compiledArtifactsForDeploy.find(
+      (a) => a.id === selectedArtifactIdStellar
+    );
+
+    if (!walletAddressStellar || !selectedArtifact) {
+      toast.error('Please select a wallet and a compiled contract.');
+      return;
+    }
+
+    console.log('--- STELLAR DEPLOY REQUEST ---');
+    console.log('Environment ID:', environmentStellar);
+    console.log('Wallet Address:', walletAddressStellar);
+    console.log('Selected Artifact:', selectedArtifact);
+    console.log('------------------------------');
+
+    onDeployStellar({
+      environmentId: environmentStellar,
+      walletAddress: walletAddressStellar,
+      artifactToDeploy: selectedArtifact,
+    });
+  };
+
+  const handleStellarAccordionChangeInternal =
+    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      onStellarAccordionChange(panel, isExpanded);
     };
 
   // Cüzdan hesap değişiklikleri için callback'ler (Bunlar ide-deploy içinde kalabilir)
@@ -406,6 +483,22 @@ export function IdeDeploy({
       }
     }
   }, [platform, compiledArtifactsForDeploy, selectedArtifactIdSolana]);
+
+  useEffect(() => {
+    if (platform === 'stellar') {
+      const stellarArtifacts = compiledArtifactsForDeploy.filter((a) => a.platform === 'stellar');
+      if (stellarArtifacts.length > 0) {
+        const currentSelectionValid = stellarArtifacts.some(
+          (a) => a.id === selectedArtifactIdStellar
+        );
+        if (!currentSelectionValid || !selectedArtifactIdStellar) {
+          setSelectedArtifactIdStellar(stellarArtifacts[0].id);
+        }
+      } else {
+        setSelectedArtifactIdStellar('');
+      }
+    }
+  }, [platform, compiledArtifactsForDeploy, selectedArtifactIdStellar]);
 
   const renderEvmDeploy = () => {
     const currentEvmArtifacts = compiledArtifactsForDeploy.filter((a) => a.platform === 'evm');
@@ -930,39 +1023,207 @@ export function IdeDeploy({
 
   const renderStellarDeploy = () => {
     const stellarArtifacts = compiledArtifactsForDeploy.filter((a) => a.platform === 'stellar');
+    const currentMockWalletsForDropdown =
+      environmentStellar !== 'browser' &&
+      mockStellarWallets[environmentStellar as keyof typeof mockStellarWallets]
+        ? mockStellarWallets[environmentStellar as keyof typeof mockStellarWallets] || []
+        : [];
 
     return (
-      <Stack spacing={2}>
-        <Typography variant="h6">Stellar Deployment</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Stellar (Soroban) deployment functionality is not yet implemented.
-        </Typography>
-
+      <Stack spacing={2.5}>
         <FormControl fullWidth size="small">
-          <InputLabel>Compiled Contract</InputLabel>
+          <InputLabel id="stellar-environment-select-label">Environment</InputLabel>
+          <Select
+            labelId="stellar-environment-select-label"
+            value={environmentStellar}
+            label="Environment"
+            onChange={(e) => setEnvironmentStellar(e.target.value)}
+          >
+            {stellarEnvironments.map((env) => (
+              <MenuItem key={env.id} value={env.id}>
+                {env.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {environmentStellar === 'browser' ? (
+          <Box
+            sx={{
+              border: (theme) => `1px dashed ${theme.palette.divider}`,
+              borderRadius: 1,
+              p: 1.5,
+              backgroundColor: (theme) => theme.palette.background.neutral,
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Iconify icon="logos:stellar" width={20} />
+              <Typography variant="body2" color="text.secondary">
+                Connect Freighter or xBull wallet to deploy
+              </Typography>
+            </Stack>
+          </Box>
+        ) : (
+          <FormControl fullWidth size="small" disabled={currentMockWalletsForDropdown.length === 0}>
+            <InputLabel id="stellar-wallet-select-label">Wallet Account</InputLabel>
+            <Select
+              labelId="stellar-wallet-select-label"
+              value={walletAddressStellar}
+              label="Wallet Account"
+              onChange={(e) => setWalletAddressStellar(e.target.value)}
+            >
+              {currentMockWalletsForDropdown.map((wallet) => (
+                <MenuItem key={wallet.address} value={wallet.address}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ overflow: 'hidden' }}
+                  >
+                    <Iconify icon="logos:stellar" width={16} />
+                    <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
+                      {wallet.name}
+                    </Typography>
+                    <Typography variant="caption" noWrap color="text.secondary">
+                      ({wallet.address.slice(0, 4)}...{wallet.address.slice(-4)})
+                    </Typography>
+                  </Stack>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        <FormControl
+          fullWidth
+          size="small"
+          disabled={!walletAddressStellar || stellarArtifacts.length === 0}
+        >
+          <InputLabel>Contract</InputLabel>
           <Select
             value={selectedArtifactIdStellar}
-            onChange={(e) => setSelectedArtifactIdStellar(e.target.value)}
-            label="Compiled Contract"
-            disabled={stellarArtifacts.length === 0}
+            label="Contract"
+            onChange={(e: SelectChangeEvent<string>) =>
+              setSelectedArtifactIdStellar(e.target.value)
+            }
           >
             {stellarArtifacts.map((artifact) => (
               <MenuItem key={artifact.id} value={artifact.id}>
                 {artifact.name}
               </MenuItem>
             ))}
+            {stellarArtifacts.length === 0 && (
+              <MenuItem disabled value="">
+                No compiled contracts available
+              </MenuItem>
+            )}
           </Select>
         </FormControl>
 
         <Button
           variant="contained"
           color="primary"
-          disabled
+          onClick={handleDeployStellarClick}
+          disabled={isDeploying || !selectedArtifactIdStellar || !walletAddressStellar}
           fullWidth
           startIcon={<Iconify icon="logos:stellar" />}
         >
-          Deploy Contract (Coming Soon)
+          {isDeploying ? 'Deploying...' : 'Deploy Contract'}
         </Button>
+
+        <Box>
+          <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
+          <Typography
+            variant="subtitle1"
+            gutterBottom
+            sx={{ color: 'text.primary', textAlign: 'center', fontWeight: 'bold', mb: 2 }}
+          >
+            Deployed Contracts
+          </Typography>
+          {deployedStellarContracts.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
+              No Stellar contracts deployed yet.
+            </Typography>
+          ) : (
+            <Box sx={{ mt: 1 }}>
+              {deployedStellarContracts.map((contract) => (
+                <Accordion
+                  key={contract.id}
+                  expanded={expandedStellarAccordion === contract.id}
+                  onChange={handleStellarAccordionChangeInternal(contract.id)}
+                  disableGutters
+                  elevation={0}
+                  sx={{
+                    mb: 1,
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                    '&:before': { display: 'none' },
+                    '&:last-of-type': { mb: 0 },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
+                    aria-controls={`${contract.id}-content`}
+                    id={`${contract.id}-header`}
+                    sx={{
+                      minHeight: 48,
+                      '&.Mui-expanded': { minHeight: 48 },
+                      '& .MuiAccordionSummary-content': {
+                        my: 1,
+                        '&.Mui-expanded': { my: 1 },
+                        alignItems: 'center',
+                      },
+                    }}
+                  >
+                    <Iconify
+                      icon="logos:stellar"
+                      sx={{ mr: 1, color: 'primary.main', flexShrink: 0 }}
+                    />
+                    <Typography variant="subtitle2" sx={{ flexShrink: 0, mr: 1 }}>
+                      {contract.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      ({contract.contractId.substring(0, 8)}...
+                      {contract.contractId.substring(contract.contractId.length - 8)})
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{ p: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}
+                  >
+                    <Stack spacing={1}>
+                      <Typography variant="caption">
+                        <strong>Network:</strong> {contract.network}
+                      </Typography>
+                      <Typography variant="caption">
+                        <strong>Deployed:</strong> {contract.timestamp}
+                      </Typography>
+                      {contract.txHash && (
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <Typography variant="caption">
+                            <strong>Tx:</strong>
+                          </Typography>
+                          <Link
+                            href={`https://stellar.expert/explorer/${environmentStellar === 'testnet' ? 'testnet' : 'public'}/tx/${contract.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="caption"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              wordBreak: 'break-all',
+                            }}
+                          >
+                            {`${contract.txHash.substring(0, 6)}...${contract.txHash.substring(contract.txHash.length - 4)}`}
+                            <Iconify icon="eva:external-link-fill" width={14} sx={{ ml: 0.5 }} />
+                          </Link>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </Box>
+          )}
+        </Box>
       </Stack>
     );
   };

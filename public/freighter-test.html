@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freighter Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .log-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .test-result {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Freighter Debug Test</h1>
+        <p>Bu sayfa Freighter extension'ının neden çalışmadığını debug eder.</p>
+        
+        <div id="status" class="status info">Freighter extension debug ediliyor...</div>
+        
+        <div class="test-section">
+            <h3>🚨 Extension Permissions Check</h3>
+            <div id="permissions-info" class="debug-info">Checking permissions...</div>
+            <button onclick="checkPermissions()">Check Permissions</button>
+            <button onclick="openExtensionPage()">Open Extension Page</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Manual Debug Tests</h3>
+            <button onclick="deepWindowScan()">Deep Window Scan</button>
+            <button onclick="checkContentScripts()">Check Content Scripts</button>
+            <button onclick="checkExtensionContext()">Check Extension Context</button>
+            <button onclick="tryAlternativeAPIs()">Try Alternative APIs</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Test Sonuçları</h3>
+            <div id="test-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Debug Logs</h3>
+            <div id="logs" class="log-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💡 Troubleshooting Steps</h3>
+            <ol>
+                <li>Chrome'da <code>chrome://extensions/</code> adresine git</li>
+                <li>Freighter extension'ı bul ve <strong>"Details"</strong> butonuna tıkla</li>
+                <li><strong>"Site access"</strong> ayarını <strong>"On all sites"</strong> yap</li>
+                <li><strong>"Allow in Incognito"</strong> seçeneğini aktif et</li>
+                <li>Extension'ı disable/enable yap</li>
+                <li>Browser'ı yeniden başlat</li>
+                <li>Bu sayfayı yenile</li>
+            </ol>
+            
+            <h4>🚨 Freighter Extension Yüklü Değilse:</h4>
+            <p><strong>Chrome Web Store'dan yükle:</strong></p>
+            <a href="https://chrome.google.com/webstore/detail/freighter/bcacfldlkkdogcmkkibnjlakofdplcbk" 
+               target="_blank" 
+               style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 10px 0;">
+               📦 Install Freighter Extension
+            </a>
+            
+            <h4>🔍 Extension Status Check:</h4>
+            <div id="extension-status" style="background: #f8f9fa; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0;">
+                <p><strong>Currently Detected Extensions:</strong></p>
+                <ul id="detected-extensions"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logContainer;
+        let statusContainer;
+        let resultsContainer;
+        let permissionsContainer;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            console.log(logEntry);
+            
+            if (logContainer) {
+                const logElement = document.createElement('div');
+                logElement.textContent = logEntry;
+                logElement.style.color = type === 'error' ? '#dc3545' : 
+                                        type === 'success' ? '#28a745' : 
+                                        type === 'warning' ? '#ffc107' : '#333';
+                logContainer.appendChild(logElement);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        function addTestResult(testName, result, details = '') {
+            if (resultsContainer) {
+                const resultElement = document.createElement('div');
+                resultElement.className = `test-result ${result ? 'success' : 'error'}`;
+                resultElement.innerHTML = `
+                    <strong>${testName}:</strong> ${result ? '✅ PASS' : '❌ FAIL'}
+                    ${details ? `<br><small>${details}</small>` : ''}
+                `;
+                resultsContainer.appendChild(resultElement);
+            }
+        }
+
+        function updateStatus(message, type = 'info') {
+            if (statusContainer) {
+                statusContainer.textContent = message;
+                statusContainer.className = `status ${type}`;
+            }
+        }
+
+        function updatePermissions(info) {
+            if (permissionsContainer) {
+                permissionsContainer.textContent = info;
+            }
+        }
+
+        // Deep window scan
+        window.deepWindowScan = function() {
+            log('🔍 Starting deep window scan...');
+            
+            const allKeys = Object.getOwnPropertyNames(window);
+            const allDescriptors = {};
+            
+            // Get all property descriptors
+            allKeys.forEach(key => {
+                try {
+                    const descriptor = Object.getOwnPropertyDescriptor(window, key);
+                    if (descriptor) {
+                        allDescriptors[key] = {
+                            configurable: descriptor.configurable,
+                            enumerable: descriptor.enumerable,
+                            writable: descriptor.writable,
+                            hasGetter: !!descriptor.get,
+                            hasSetter: !!descriptor.set,
+                            type: typeof window[key]
+                        };
+                    }
+                } catch (e) {
+                    allDescriptors[key] = { error: e.message };
+                }
+            });
+
+            // Look for Stellar/Freighter related keys
+            const stellarKeys = allKeys.filter(key => {
+                const lowerKey = key.toLowerCase();
+                return lowerKey.includes('stellar') || 
+                       lowerKey.includes('freighter') || 
+                       lowerKey.includes('soroban') ||
+                       lowerKey.includes('xlm') ||
+                       lowerKey.includes('wallet');
+            });
+
+            log(`Total window properties: ${allKeys.length}`);
+            log(`Stellar-related keys: ${stellarKeys.join(', ')}`);
+            
+            // Check for injected scripts
+            const scripts = Array.from(document.scripts);
+            const extensionScripts = scripts.filter(script => 
+                script.src.includes('extension') || 
+                script.src.includes('chrome-extension') ||
+                script.src.includes('moz-extension')
+            );
+
+            log(`Extension scripts found: ${extensionScripts.length}`);
+            extensionScripts.forEach(script => log(`Script: ${script.src}`));
+
+            addTestResult('Deep Window Scan', stellarKeys.length > 0, 
+                `Found ${stellarKeys.length} stellar-related keys: ${stellarKeys.join(', ')}`);
+        };
+
+        // Check content scripts
+        window.checkContentScripts = function() {
+            log('🔍 Checking content scripts...');
+            
+            // Check for script elements
+            const allScripts = Array.from(document.querySelectorAll('script'));
+            const inlineScripts = allScripts.filter(s => !s.src);
+            const externalScripts = allScripts.filter(s => s.src);
+            
+            log(`Inline scripts: ${inlineScripts.length}`);
+            log(`External scripts: ${externalScripts.length}`);
+            
+            // Check for meta tags that extensions might add
+            const metaTags = Array.from(document.querySelectorAll('meta'));
+            const extensionMetas = metaTags.filter(meta => {
+                const name = meta.getAttribute('name') || '';
+                const content = meta.getAttribute('content') || '';
+                return name.toLowerCase().includes('extension') || 
+                       name.toLowerCase().includes('freighter') ||
+                       content.toLowerCase().includes('extension');
+            });
+
+            log(`Extension meta tags: ${extensionMetas.length}`);
+            extensionMetas.forEach(meta => {
+                log(`Meta: ${meta.getAttribute('name')} = ${meta.getAttribute('content')}`);
+            });
+
+            // Check document ready state
+            log(`Document ready state: ${document.readyState}`);
+            
+            addTestResult('Content Scripts Check', extensionMetas.length > 0 || externalScripts.some(s => s.src.includes('extension')), 
+                `Found ${extensionMetas.length} extension meta tags`);
+        };
+
+        // Check extension context
+        window.checkExtensionContext = function() {
+            log('🔍 Checking extension context...');
+            
+            // Check for Chrome extension API
+            const hasChrome = !!window.chrome;
+            const hasChromeRuntime = !!(window.chrome && window.chrome.runtime);
+            
+            log(`Chrome API available: ${hasChrome}`);
+            log(`Chrome runtime available: ${hasChromeRuntime}`);
+            
+            if (window.chrome && window.chrome.runtime) {
+                try {
+                    log(`Chrome runtime ID: ${window.chrome.runtime.id || 'undefined'}`);
+                } catch (e) {
+                    log(`Chrome runtime error: ${e.message}`);
+                }
+            }
+
+            // Check navigator
+            log(`User agent: ${navigator.userAgent}`);
+            log(`Platform: ${navigator.platform}`);
+            log(`Vendor: ${navigator.vendor}`);
+            
+            // Check for web extension APIs
+            const hasWebExtension = !!window.browser;
+            log(`WebExtension API available: ${hasWebExtension}`);
+
+            // Check for Freighter-specific extension
+            if (window.chrome && window.chrome.management) {
+                window.chrome.management.getAll().then(extensions => {
+                    log('📦 Installed Extensions:');
+                    extensions.forEach(ext => {
+                        const isFreighter = ext.name.toLowerCase().includes('freighter') || 
+                                          ext.description.toLowerCase().includes('stellar') ||
+                                          ext.description.toLowerCase().includes('freighter');
+                        log(`  ${ext.name} (${ext.id}) - ${ext.enabled ? 'ENABLED' : 'DISABLED'} ${isFreighter ? '⭐ FREIGHTER!' : ''}`);
+                        
+                        if (isFreighter) {
+                            log(`    🎯 FREIGHTER FOUND: ${ext.name}`, 'success');
+                            log(`    📋 Description: ${ext.description}`);
+                            log(`    🔧 Version: ${ext.version}`);
+                            log(`    ⚡ Enabled: ${ext.enabled}`);
+                            addTestResult('Freighter Extension Found', ext.enabled, 
+                                `${ext.name} v${ext.version} - ${ext.enabled ? 'Enabled' : 'Disabled'}`);
+                        }
+                    });
+                }).catch(e => {
+                    log(`Extension management error: ${e.message}`, 'error');
+                });
+            } else {
+                log('Chrome management API not available', 'warning');
+            }
+
+            addTestResult('Extension Context Check', hasChrome, 
+                `Chrome API: ${hasChrome}, Runtime: ${hasChromeRuntime}`);
+        };
+
+        // Try alternative APIs
+        window.tryAlternativeAPIs = function() {
+            log('🔍 Trying alternative APIs...');
+            
+            const alternatives = [
+                'window.freighter',
+                'window.freighterApi', 
+                'window.stellar',
+                'window.stellarWallet',
+                'window.soroban',
+                'window.xlm',
+                'window.FreighterWallet',
+                'window.StellarWallet'
+            ];
+
+            alternatives.forEach(path => {
+                try {
+                    const value = eval(path);
+                    log(`${path}: ${typeof value} ${value ? '✅' : '❌'}`);
+                    if (value && typeof value === 'object') {
+                        const methods = Object.getOwnPropertyNames(value);
+                        log(`  Methods: ${methods.join(', ')}`);
+                    }
+                } catch (e) {
+                    log(`${path}: Error - ${e.message}`);
+                }
+            });
+
+            // DEEP FREIGHTER SEARCH - Check all possible locations
+            log('🔍 DEEP FREIGHTER SEARCH...');
+            
+            // Check all window properties for anything Freighter-related
+            const allProps = [];
+            let obj = window;
+            while (obj) {
+                Object.getOwnPropertyNames(obj).forEach(prop => {
+                    if (prop.toLowerCase().includes('freighter') || 
+                        prop.toLowerCase().includes('stellar')) {
+                        allProps.push(`${obj.constructor.name}.${prop}`);
+                        try {
+                            const val = obj[prop];
+                            log(`Found: ${obj.constructor.name}.${prop} = ${typeof val}`);
+                            if (val && typeof val === 'object' && val.isAllowed) {
+                                log(`  🎯 HAS isAllowed METHOD!`, 'success');
+                            }
+                        } catch (e) {
+                            log(`  Error accessing: ${e.message}`);
+                        }
+                    }
+                });
+                obj = Object.getPrototypeOf(obj);
+                if (obj === Object.prototype) break;
+            }
+
+            // Check document for Freighter-related elements
+            const freighterElements = document.querySelectorAll('*[id*="freighter"], *[class*="freighter"]');
+            log(`Freighter DOM elements: ${freighterElements.length}`);
+
+            // Check for Freighter in different contexts
+            const contexts = [
+                { name: 'window', obj: window },
+                { name: 'document', obj: document },
+                { name: 'navigator', obj: navigator },
+                { name: 'globalThis', obj: globalThis }
+            ];
+
+            contexts.forEach(context => {
+                Object.keys(context.obj).forEach(key => {
+                    if (key.toLowerCase().includes('freighter')) {
+                        log(`Found in ${context.name}: ${key}`);
+                    }
+                });
+            });
+
+            // Check for delayed injection
+            log('🔍 Checking for delayed injection patterns...');
+            
+            // Look for common extension injection patterns
+            const injectionPatterns = [
+                () => window.freighter,
+                () => window.document.freighter,
+                () => window.parent.freighter,
+                () => window.top.freighter,
+                () => document.getElementById('freighter'),
+                () => document.querySelector('[data-freighter]'),
+                () => window.postMessage && window.addEventListener
+            ];
+
+            injectionPatterns.forEach((pattern, index) => {
+                try {
+                    const result = pattern();
+                    if (result) {
+                        log(`Injection pattern ${index + 1}: Found something!`, 'success');
+                    }
+                } catch (e) {
+                    // Silent fail
+                }
+            });
+
+            // Force trigger extension events
+            log('🔍 Triggering extension events...');
+            const events = [
+                'freighterApiReady',
+                'stellar-wallet-ready',
+                'wallet-ready',
+                'DOMContentLoaded',
+                'load'
+            ];
+
+            events.forEach(eventName => {
+                try {
+                    window.dispatchEvent(new CustomEvent(eventName));
+                    document.dispatchEvent(new CustomEvent(eventName));
+                } catch (e) {
+                    // Silent fail
+                }
+            });
+
+            // Check for extension-specific DOM modifications
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === 1) { // Element node
+                                const element = node;
+                                if (element.tagName === 'SCRIPT' && 
+                                    (element.src.includes('freighter') || 
+                                     element.textContent.includes('freighter'))) {
+                                    log(`🎯 Freighter script detected: ${element.src || 'inline'}`, 'success');
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            observer.observe(document, {
+                childList: true,
+                subtree: true
+            });
+
+            // Stop observing after 5 seconds
+            setTimeout(() => observer.disconnect(), 5000);
+
+            addTestResult('Alternative APIs Check', false, 'Check logs for details');
+        };
+
+        // Check permissions
+        window.checkPermissions = function() {
+            log('🔍 Checking permissions...');
+            
+            const permissionInfo = {
+                location: window.location.href,
+                protocol: window.location.protocol,
+                hostname: window.location.hostname,
+                port: window.location.port,
+                isSecure: window.location.protocol === 'https:',
+                isLocalhost: window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1',
+                cookieEnabled: navigator.cookieEnabled,
+                storageAvailable: !!window.localStorage,
+                indexedDBAvailable: !!window.indexedDB,
+                isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                isDeviceEmulation: navigator.userAgent.includes('Android') && navigator.platform === 'MacIntel'
+            };
+
+            const infoText = Object.entries(permissionInfo)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('\n');
+
+            updatePermissions(infoText);
+            log('Permission info updated');
+
+            // Freighter specifically needs certain permissions
+            if (!permissionInfo.isSecure && !permissionInfo.isLocalhost) {
+                log('⚠️ WARNING: Not HTTPS and not localhost - extensions may not work', 'warning');
+                updateStatus('⚠️ Extension may not work on non-HTTPS sites', 'warning');
+            }
+
+            // Check for mobile/device emulation
+            if (permissionInfo.isDeviceEmulation) {
+                log('🚨 CRITICAL: Browser is in mobile device emulation mode!', 'error');
+                updateStatus('🚨 MOBILE EMULATION DETECTED - Turn off device toolbar in DevTools!', 'error');
+                addTestResult('Mobile Emulation Check', false, 'Turn off mobile device simulation in browser DevTools');
+            } else if (permissionInfo.isMobile) {
+                log('⚠️ WARNING: Mobile device detected - extensions may not work', 'warning');
+                updateStatus('⚠️ Mobile device - extensions may not work', 'warning');
+            }
+
+            addTestResult('Permissions Check', permissionInfo.isSecure || permissionInfo.isLocalhost, 
+                `Secure context: ${permissionInfo.isSecure || permissionInfo.isLocalhost}`);
+        };
+
+        // Open extension page
+        window.openExtensionPage = function() {
+            window.open('chrome://extensions/', '_blank');
+        };
+
+        window.clearResults = function() {
+            if (resultsContainer) {
+                resultsContainer.innerHTML = '';
+            }
+            if (logContainer) {
+                logContainer.innerHTML = '';
+            }
+            updateStatus('Results cleared', 'info');
+        };
+
+        // Auto-run tests when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            logContainer = document.getElementById('logs');
+            statusContainer = document.getElementById('status');
+            resultsContainer = document.getElementById('test-results');
+            permissionsContainer = document.getElementById('permissions-info');
+            
+            log('🔍 Freighter Debug Test Started');
+            
+            // Update detected extensions list
+            updateDetectedExtensions();
+            
+            // Auto-run basic checks
+            setTimeout(() => {
+                checkPermissions();
+                deepWindowScan();
+                checkExtensionContext();
+            }, 1000);
+
+            // Wait longer for extension to potentially load
+            setTimeout(() => {
+                if (!window.freighter) {
+                    log('❌ Freighter still not found after 5 seconds', 'error');
+                    updateStatus('❌ Freighter not found - check troubleshooting steps', 'error');
+                    tryAlternativeAPIs();
+                }
+            }, 5000);
+            
+            log('✅ Debug tests started. Check results above.');
+        });
+
+        // Update detected extensions
+        function updateDetectedExtensions() {
+            const detectedList = document.getElementById('detected-extensions');
+            if (!detectedList) return;
+
+            detectedList.innerHTML = '';
+
+            // Check for wallet-related objects
+            const walletObjects = [];
+            
+            // Known wallet objects to check
+            const walletChecks = [
+                { name: 'Freighter', key: 'freighter', status: !!window.freighter },
+                { name: 'MetaMask', key: 'ethereum', status: !!window.ethereum },
+                { name: 'Coinbase', key: 'coinbaseWalletExtension', status: !!window.coinbaseWalletExtension },
+                { name: 'Trust Wallet', key: 'trustwallet', status: !!window.trustwallet },
+                { name: 'OKX Wallet', key: 'okxwallet', status: !!window.okxwallet },
+                { name: 'Phantom', key: 'phantom', status: !!window.phantom },
+                { name: 'Solflare', key: 'solflare', status: !!window.solflare }
+            ];
+
+            walletChecks.forEach(wallet => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${wallet.name}:</strong> ${wallet.status ? '✅ Detected' : '❌ Not Found'} (${wallet.key})`;
+                li.style.color = wallet.status ? '#28a745' : '#dc3545';
+                detectedList.appendChild(li);
+            });
+
+            // Check extension scripts
+            const scripts = Array.from(document.scripts);
+            const extensionScripts = scripts.filter(script => 
+                script.src.includes('extension') || 
+                script.src.includes('chrome-extension') ||
+                script.src.includes('moz-extension')
+            );
+
+            if (extensionScripts.length > 0) {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>Extension Scripts:</strong> ${extensionScripts.length} found`;
+                li.style.color = '#007bff';
+                detectedList.appendChild(li);
+                
+                extensionScripts.forEach(script => {
+                    const subLi = document.createElement('li');
+                    subLi.innerHTML = `&nbsp;&nbsp;• ${script.src}`;
+                    subLi.style.fontSize = '12px';
+                    subLi.style.color = '#666';
+                    detectedList.appendChild(subLi);
+                });
+            }
+        }
+
+        // Listen for any wallet-related events
+        const walletEvents = [
+            'freighterApiReady',
+            'stellarWalletReady', 
+            'walletReady',
+            'extensionReady',
+            'DOMContentLoaded',
+            'load'
+        ];
+
+        walletEvents.forEach(eventType => {
+            window.addEventListener(eventType, (event) => {
+                log(`🎉 Event received: ${eventType}`, 'success');
+                if (eventType.includes('freighter') || eventType.includes('stellar')) {
+                    updateStatus(`🎉 ${eventType} event received!`, 'success');
+                    setTimeout(() => deepWindowScan(), 100);
+                }
+            });
+        });
+
+        // Periodic check for Freighter
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+            checkCount++;
+            if (window.freighter) {
+                log(`🎉 Freighter found after ${checkCount} checks!`, 'success');
+                updateStatus('✅ Freighter detected!', 'success');
+                clearInterval(checkInterval);
+                deepWindowScan();
+            } else if (checkCount > 30) { // Check for 15 seconds
+                log('❌ Freighter not found after 30 checks', 'error');
+                clearInterval(checkInterval);
+            }
+        }, 500);
+    </script>
+</body>
+</html> 
