@@ -6,7 +6,12 @@ import type { Compilation } from 'src/actions/project/resources';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 // Actions & Types
 import type { RequestCompilationPayload } from 'src/actions/project/resources';
-import type { EvmVersion, AnchorVersion, SolidityVersion } from 'src/utils/compiler';
+import type {
+  EvmVersion,
+  AnchorVersion,
+  SolidityVersion,
+  SorobanVersion,
+} from 'src/utils/compiler';
 import { toast } from 'sonner';
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
@@ -84,11 +89,15 @@ export interface SolanaCompilerSettings {
   anchorVersion: AnchorVersion;
 }
 
+export interface StellarCompilerSettings {
+  sorobanVersion: SorobanVersion;
+}
+
 // Deploy için artifact formatı
 export interface ArtifactForDeploy {
   id: string; // Benzersiz ID (EVM: compilationId + contractKey, Solana: compilationId + programId)
   name: string; // Gösterilecek isim (EVM: ContractName (path), Solana: Program Name)
-  platform: 'evm' | 'solana';
+  platform: 'evm' | 'solana' | 'stellar';
   fullArtifacts: Record<string, any>; // İlgili kontratın/programın tüm artifact objesi
   // EVM'e özel alanlar (opsiyonel, fullArtifacts'tan da çıkarılabilir)
   abi?: any[];
@@ -99,6 +108,8 @@ export interface ArtifactForDeploy {
   programId?: string; // Solana program ID (idl.address)
   programBinaryBase64?: string;
   keypair?: number[];
+  // Stellar'a özel alanlar
+  wasmBase64?: string;
 }
 
 // Mock environment data (normally from a config or ide-deploy.tsx)
@@ -246,6 +257,17 @@ export default function ContractEditorView() {
                   keypair,
                 });
               }
+            } else if (currentProjectDetails?.platform === 'stellar') {
+              const { wasmBase64, contractName } = updatedCompilation.artifacts as any;
+              if (wasmBase64 && contractName) {
+                newArtifactsForDeploy.push({
+                  id: `${updatedCompilation.id}-${contractName}`,
+                  name: contractName,
+                  platform: 'stellar',
+                  fullArtifacts: updatedCompilation.artifacts,
+                  wasmBase64,
+                });
+              }
             }
             setAvailableArtifactsForDeploy((prev) =>
               [...prev, ...newArtifactsForDeploy].filter(
@@ -342,6 +364,32 @@ export default function ContractEditorView() {
         compilerVersion: settings.anchorVersion,
       };
       const result = await requestCompilation(payload);
+      if (result && result.compilation_id) {
+        setActiveCompilationId(result.compilation_id);
+        setIsSubscribingToCompilations(true);
+      } else {
+        setIsSubscribingToCompilations(false);
+      }
+    },
+    [projectId, user, requestCompilation]
+  );
+
+  const handleRequestStellarCompilation = useCallback(
+    async (settings: StellarCompilerSettings) => {
+      if (!projectId || !user) return;
+      console.log('[ContractEditorView] Requesting Stellar compilation with settings:', settings);
+      setFullCompilationData(null);
+      setActiveCompilationId(null);
+      setAvailableArtifactsForDeploy([]); // Clear previous artifacts for deploy
+
+      const payload: RequestCompilationPayload = {
+        projectId,
+        userId: user.id,
+        compilerVersion: settings.sorobanVersion,
+      };
+
+      const result = await requestCompilation(payload);
+
       if (result && result.compilation_id) {
         setActiveCompilationId(result.compilation_id);
         setIsSubscribingToCompilations(true);
@@ -737,9 +785,10 @@ export default function ContractEditorView() {
           files={transformedFiles}
           onFileSelect={handleFileSelect}
           isLoading={hierarchyLoading}
-          platform={currentProjectDetails?.platform}
+          platform={currentProjectDetails?.platform ?? null}
           onCompileEvm={handleRequestEvmCompilation}
           onCompileSolana={handleRequestSolanaCompilation}
+          onCompileStellar={handleRequestStellarCompilation}
           isCompiling={isRequestingCompilationGlobal || isSubscribingToCompilations}
           simplifiedCompilationData={simplifiedCompilationForIde}
           onDeployEvm={handleRequestEvmDeploy}

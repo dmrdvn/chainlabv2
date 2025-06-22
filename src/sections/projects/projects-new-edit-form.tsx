@@ -38,7 +38,7 @@ function formToProjectData(
     logo_url: formData.logo_url || null,
     visibility: formData.visibility as ProjectVisibility,
     social_links: formData.social_links,
-    platform: formData.platform,
+    platform: formData.platform as 'evm' | 'solana' | 'stellar',
   };
 }
 
@@ -49,7 +49,7 @@ export const ProjectFormSchema = zod.object({
   name: zod.string().min(1, { message: 'Project name is required' }),
   description: zod.string().nullable(),
   visibility: zod.enum(['public', 'private']),
-  platform: zod.enum(['evm', 'solana'], {
+  platform: zod.enum(['evm', 'solana', 'stellar'], {
     errorMap: () => ({ message: 'Platform selection is required' }),
   }),
   tags: zod.string().array().default([]),
@@ -109,7 +109,7 @@ export function ProjectsNewEditForm({
     name: '',
     description: '',
     visibility: 'public',
-    platform: 'evm',
+    platform: currentProject?.platform || 'evm',
     tags: [],
     logo_url: '',
     social_links: {
@@ -272,6 +272,7 @@ export function ProjectsNewEditForm({
           >
             <MenuItem value="evm">EVM (Ethereum, Polygon, vb.)</MenuItem>
             <MenuItem value="solana">Solana</MenuItem>
+            <MenuItem value="stellar">Stellar (Soroban)</MenuItem>
           </Field.Select>
         </Stack>
       </Stack>

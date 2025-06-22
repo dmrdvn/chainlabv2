@@ -12,6 +12,7 @@ import {
 import {
   getProjectEvmContractsAction,
   getProjectSolanaProgramsAction,
+  getProjectStellarContractsAction,
 } from 'src/actions/project/resources';
 import { useMemo, useEffect } from 'react';
 import { useProjectById } from './use-project-queries';
@@ -177,6 +178,43 @@ export function useProjectSolanaPrograms(projectId: string | null) {
     isLoading: isLoading,
     error: error,
     refreshPrograms: mutate,
+    isValidating: isValidating,
+  };
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * Hook to fetch Stellar contract files for a specific project.
+ * It filters files based on the project's platform ('stellar') and file characteristics (e.g., .rs extension or file_type).
+ * @param projectId The ID of the project.
+ * @returns Object containing Stellar contract files, loading state, error, and refresh function.
+ */
+export function useProjectStellarContracts(projectId: string | null) {
+  const key = projectId ? ['projectStellarContracts', projectId] : null;
+
+  const fetchStellarContracts = async ([_, pId]: [string, string]): Promise<
+    ProjectHierarchyItem[]
+  > => {
+    const response = await getProjectStellarContractsAction(pId);
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch Stellar contracts');
+    }
+    return response.data;
+  };
+
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    ProjectHierarchyItem[] | null,
+    Error
+  >(key, fetchStellarContracts, {
+    keepPreviousData: true, // İsteğe bağlı
+  });
+
+  return {
+    stellarContracts: data,
+    isLoading: isLoading,
+    error: error,
+    refreshContracts: mutate,
     isValidating: isValidating,
   };
 }

@@ -21,7 +21,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 // Custom Hooks & Actions/Types
-import { EvmVersion, AnchorVersion, SolidityVersion } from 'src/utils/compiler';
+import { EvmVersion, AnchorVersion, SolidityVersion, SorobanVersion } from 'src/utils/compiler';
 
 // Custom Components
 import { Iconify } from 'src/components/iconify';
@@ -29,6 +29,7 @@ import { Iconify } from 'src/components/iconify';
 import type {
   EvmCompilerSettings,
   SolanaCompilerSettings,
+  StellarCompilerSettings,
   SimplifiedCompilationData,
 } from './view/contract-editor-view';
 
@@ -40,7 +41,6 @@ interface CompiledEvmContractInfo {
   bytecode?: string | null;
 }
 
-const anchorVersions = [AnchorVersion.V0_28_0, AnchorVersion.V0_28_0, AnchorVersion.V0_27_0];
 interface CompiledSolanaProgramInfo {
   name: string;
   programId: string;
@@ -50,10 +50,17 @@ interface CompiledSolanaProgramInfo {
   binaryBase64?: string | null;
 }
 
+interface CompiledStellarContractInfo {
+  name: string;
+  timestamp: string;
+  wasmBase64?: string | null;
+}
+
 interface IdeCompilerProps {
-  platform: 'evm' | 'solana' | null;
+  platform: 'evm' | 'solana' | 'stellar' | null;
   onCompileEvm: (settings: EvmCompilerSettings) => Promise<void>;
   onCompileSolana: (settings: SolanaCompilerSettings) => Promise<void>;
+  onCompileStellar: (settings: StellarCompilerSettings) => Promise<void>;
   isCompiling: boolean;
   compilationUpdate?: SimplifiedCompilationData | null;
 }
@@ -62,6 +69,7 @@ export function IdeCompiler({
   platform,
   onCompileEvm,
   onCompileSolana,
+  onCompileStellar,
   isCompiling,
   compilationUpdate,
 }: IdeCompilerProps) {
@@ -73,10 +81,17 @@ export function IdeCompiler({
   const [enableOptimization, setEnableOptimization] = useState(false);
   const [optimizationRuns, setOptimizationRuns] = useState(200);
   const [compiledEvmContractExpanded, setCompiledEvmContractExpanded] = useState<boolean>(false);
-  const [anchorVersion, setAnchorVersion] = useState(anchorVersions[0]);
+  const [anchorVersion, setAnchorVersion] = useState(AnchorVersion.V0_28_0);
   const [compiledSolanaProgram, setCompiledSolanaProgram] =
     useState<CompiledSolanaProgramInfo | null>(null);
   const [compiledSolanaProgramExpanded, setCompiledSolanaProgramExpanded] =
+    useState<boolean>(false);
+
+  // Stellar (Soroban) States
+  const [sorobanVersion, setSorobanVersion] = useState(SorobanVersion.V22_0_0);
+  const [compiledStellarContract, setCompiledStellarContract] =
+    useState<CompiledStellarContractInfo | null>(null);
+  const [compiledStellarContractExpanded, setCompiledStellarContractExpanded] =
     useState<boolean>(false);
 
   useEffect(() => {
@@ -133,6 +148,26 @@ export function IdeCompiler({
             );
             setCompiledSolanaProgram(null);
           }
+        } else if (platform === 'stellar') {
+          // Stellar artifacts format: { "contractName": { "wasm": "base64..." } }
+          const artifactKeys = Object.keys(compilationUpdate.artifacts);
+          const firstContractName = artifactKeys[0]; // Get the first contract name
+
+          if (firstContractName && compilationUpdate.artifacts[firstContractName]?.wasm) {
+            const contractArtifact = compilationUpdate.artifacts[firstContractName];
+            setCompiledStellarContract({
+              name: firstContractName,
+              timestamp: new Date(compilationUpdate.completed_at || Date.now()).toLocaleString(),
+              wasmBase64: contractArtifact.wasm,
+            });
+            setCompiledStellarContractExpanded(true);
+          } else {
+            console.warn(
+              '[IdeCompiler] Stellar artifacts are not in the expected format (expected contractName with wasm property):',
+              compilationUpdate.artifacts
+            );
+            setCompiledStellarContract(null);
+          }
         }
       } else if (
         compilationUpdate.status === 'error' ||
@@ -144,6 +179,8 @@ export function IdeCompiler({
           setCompiledEvmContract(null);
         } else if (platform === 'solana') {
           setCompiledSolanaProgram(null);
+        } else if (platform === 'stellar') {
+          setCompiledStellarContract(null);
         }
         // Optionally, if you want to collapse the accordions when a new compilation starts or fails for the current platform:
         // if (platform === 'evm') setCompiledEvmContractExpanded(false);
@@ -186,12 +223,26 @@ export function IdeCompiler({
     await onCompileSolana(settings);
   };
 
+  const handleCompileStellarClick = async () => {
+    setCompiledStellarContract(null);
+    setCompiledStellarContractExpanded(false);
+
+    const settings: StellarCompilerSettings = {
+      sorobanVersion,
+    };
+    await onCompileStellar(settings);
+  };
+
   const handleEvmAccordionChange = (event: React.SyntheticEvent, isExpanded: boolean) => {
     setCompiledEvmContractExpanded(isExpanded);
   };
 
   const handleSolanaAccordionChange = (event: React.SyntheticEvent, isExpanded: boolean) => {
     setCompiledSolanaProgramExpanded(isExpanded);
+  };
+
+  const handleStellarAccordionChange = (event: React.SyntheticEvent, isExpanded: boolean) => {
+    setCompiledStellarContractExpanded(isExpanded);
   };
 
   const renderEvmCompiler = () => (
@@ -404,7 +455,7 @@ export function IdeCompiler({
           label="Anchor Version"
           onChange={(e) => setAnchorVersion(e.target.value as AnchorVersion)}
         >
-          {anchorVersions.map((version) => (
+          {Object.values(AnchorVersion).map((version) => (
             <MenuItem key={version} value={version}>
               {version}
             </MenuItem>
@@ -606,6 +657,141 @@ export function IdeCompiler({
     </>
   );
 
+  const renderStellarCompiler = () => (
+    <>
+      <FormControl fullWidth size="small">
+        <InputLabel>Soroban Version</InputLabel>
+        <Select
+          value={sorobanVersion}
+          label="Soroban Version"
+          onChange={(e) => setSorobanVersion(e.target.value as SorobanVersion)}
+        >
+          {(Object.values(SorobanVersion) as string[]).map((version) => (
+            <MenuItem key={version} value={version}>
+              v{version}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleCompileStellarClick}
+        disabled={isCompiling}
+        fullWidth
+        startIcon={<Iconify icon="eos-icons:atom-electron" />}
+      >
+        {isCompiling &&
+        compilationUpdate?.status !== 'success' &&
+        compilationUpdate?.status !== 'error'
+          ? 'Building... (this might take 2-3 minutes)'
+          : 'Build Contract'}
+      </Button>
+
+      <Box>
+        <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
+        <Typography
+          variant="subtitle1"
+          gutterBottom
+          sx={{
+            color: 'text.primary',
+            textAlign: 'center',
+            fontWeight: 'bold',
+            mb: 2,
+          }}
+        >
+          Build Artifact
+        </Typography>
+
+        {compiledStellarContract ? (
+          <Accordion
+            expanded={compiledStellarContractExpanded}
+            onChange={handleStellarAccordionChange}
+            disableGutters
+            elevation={0}
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              '&:before': { display: 'none' },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}
+              aria-controls="compiled-stellar-content"
+              id="compiled-stellar-header"
+              sx={{
+                minHeight: 40,
+                '&.Mui-expanded': { minHeight: 40 },
+                '& .MuiAccordionSummary-content': { my: 1, '&.Mui-expanded': { my: 0.5 } },
+              }}
+            >
+              <Iconify icon="logos:stellar" sx={{ mr: 1, mt: '2px', flexShrink: 0 }} />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {compiledStellarContract.name}
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
+              <Card
+                variant="outlined"
+                sx={{
+                  border: 'none',
+                  borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                  borderRadius: 0,
+                }}
+              >
+                <CardContent sx={{ pt: 1.5, px: 2, pb: '16px !important' }}>
+                  <Stack spacing={1.5}>
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.5 }}
+                      >
+                        Last Build
+                      </Typography>
+                      <Typography variant="body2">{compiledStellarContract.timestamp}</Typography>
+                    </Box>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      <Button
+                        sx={{ fontSize: 12 }}
+                        variant="outlined"
+                        startIcon={<Iconify icon="eva:copy-outline" />}
+                        onClick={() =>
+                          compiledStellarContract.wasmBase64 &&
+                          handleCopyToClipboard(compiledStellarContract.wasmBase64, 'WASM (Base64)')
+                        }
+                        disabled={!compiledStellarContract.wasmBase64}
+                      >
+                        Copy WASM
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </AccordionDetails>
+          </Accordion>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+            {isCompiling &&
+            compilationUpdate?.status !== 'success' &&
+            compilationUpdate?.status !== 'error'
+              ? 'Building... (this might take 2-3 minutes)'
+              : 'Contract not built yet.'}
+          </Typography>
+        )}
+      </Box>
+    </>
+  );
+
   return (
     <Stack
       spacing={3}
@@ -615,7 +801,9 @@ export function IdeCompiler({
         flexGrow: 1,
       }}
     >
-      {platform === 'solana' ? renderSolanaCompiler() : renderEvmCompiler()}
+      {platform === 'evm' && renderEvmCompiler()}
+      {platform === 'solana' && renderSolanaCompiler()}
+      {platform === 'stellar' && renderStellarCompiler()}
     </Stack>
   );
 }

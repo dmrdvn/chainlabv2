@@ -33,6 +33,7 @@ import {
   useDeleteProjectItem,
   useProjectEvmContracts,
   useProjectSolanaPrograms,
+  useProjectStellarContracts,
 } from 'src/hooks/projects';
 
 import { fDate } from 'src/utils/format-time';
@@ -53,11 +54,12 @@ type Props = BoxProps & {
 
 export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
   const { project, projectLoading } = useProjectDetails(projectId);
-  const platform = project?.platform as 'evm' | 'solana' | undefined;
+  const platform = project?.platform as 'evm' | 'solana' | 'stellar' | undefined;
 
   // Call hooks with only projectId if they don't support an options object
   const evmContractsQuery = useProjectEvmContracts(projectId);
   const solanaProgramsQuery = useProjectSolanaPrograms(projectId);
+  const stellarContractsQuery = useProjectStellarContracts(projectId);
 
   const { displayedItems, itemsLoading, itemsError, refreshItems } = useMemo(() => {
     // If project details are still loading, the items are also considered loading.
@@ -90,6 +92,15 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
       };
     }
 
+    if (platform === 'stellar') {
+      return {
+        displayedItems: stellarContractsQuery.stellarContracts || [],
+        itemsLoading: stellarContractsQuery.isLoading,
+        itemsError: stellarContractsQuery.error,
+        refreshItems: stellarContractsQuery.refreshContracts,
+      };
+    }
+
     // Default case: platform is not set or not supported for labs view
     return {
       displayedItems: [] as ProjectHierarchyItem[],
@@ -108,6 +119,10 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
     solanaProgramsQuery.isLoading,
     solanaProgramsQuery.error,
     solanaProgramsQuery.refreshPrograms,
+    stellarContractsQuery.stellarContracts,
+    stellarContractsQuery.isLoading,
+    stellarContractsQuery.error,
+    stellarContractsQuery.refreshContracts,
   ]);
 
   // Frontend data fetching
@@ -202,7 +217,12 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
     }
   };
 
-  const platformName = platform === 'evm' ? 'Contract' : platform === 'solana' ? 'Program' : 'Item';
+  const platformName =
+    platform === 'evm' || platform === 'stellar'
+      ? 'Contract'
+      : platform === 'solana'
+        ? 'Program'
+        : 'Item';
   const createNewText = `Create New ${platformName}`;
 
   const renderItems = () => {
@@ -211,7 +231,13 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
       return (
         <Card>
           <CardHeader
-            title={platform === 'evm' ? 'Contracts' : platform === 'solana' ? 'Programs' : 'Items'}
+            title={
+              platform === 'evm' || platform === 'stellar'
+                ? 'Contracts'
+                : platform === 'solana'
+                  ? 'Programs'
+                  : 'Items'
+            }
             // Yüklenirken sağ üstte buton göstermiyoruz.
           />
           <CardContent>
@@ -230,7 +256,11 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
         <Card>
           <CardHeader
             title={
-              platform === 'evm' ? 'Kontratlar' : platform === 'solana' ? 'Programlar' : 'Öğeler'
+              platform === 'evm' || platform === 'stellar'
+                ? 'Kontratlar'
+                : platform === 'solana'
+                  ? 'Programlar'
+                  : 'Öğeler'
             }
           />
           <CardContent>
@@ -244,13 +274,19 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
       return (
         <Card>
           <CardHeader
-            title={platform === 'evm' ? 'Contracts' : platform === 'solana' ? 'Programs' : 'Items'}
+            title={
+              platform === 'evm' || platform === 'stellar'
+                ? 'Contracts'
+                : platform === 'solana'
+                  ? 'Programs'
+                  : 'Items'
+            }
             // Sağ üstte buton YOK, çünkü veri yok.
           />
           <CardContent>
             <EmptyContent
-              title={`No ${platform === 'evm' ? 'Contracts' : platform === 'solana' ? 'Programs' : 'Items'} Yet`}
-              description={`Get started by creating a new ${platform === 'evm' ? 'contract' : platform === 'solana' ? 'program' : 'item'}.`}
+              title={`No ${platformName}s Yet`}
+              description={`Get started by creating a new ${platformName.toLowerCase()}.`}
               action={
                 !projectLoading &&
                 platform && ( // Platform tanımlı ve proje yüklenmediyse
@@ -273,7 +309,13 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
     return (
       <Card>
         <CardHeader
-          title={platform === 'evm' ? 'Contracts' : platform === 'solana' ? 'Programs' : 'Items'}
+          title={
+            platform === 'evm' || platform === 'stellar'
+              ? 'Contracts'
+              : platform === 'solana'
+                ? 'Programs'
+                : 'Items'
+          }
           action={
             !projectLoading &&
             platform &&
@@ -332,7 +374,8 @@ export function ProjectsDetailsLabs({ projectId, sx, ...other }: Props) {
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                       >
-                        {platform === 'evm' && item.file_type === 'sol' && (
+                        {((platform === 'evm' && item.file_type === 'sol') ||
+                          (platform === 'stellar' && item.file_type === 'rs')) && (
                           <MenuItem
                             onClick={() => {
                               handleOpenDeploymentModal(item);

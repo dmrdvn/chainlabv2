@@ -21,6 +21,7 @@ import {
   deleteProjectItemAction,
   createNewEvmContractFilesAction,
   createNewSolanaProgramFilesAction,
+  createNewStellarContractFilesAction,
   requestCompilationAction,
   getCompilationsByProjectAction,
 } from 'src/actions/project';
@@ -34,6 +35,8 @@ import {
   type CreateNewEvmContractFilesResponse,
   type CreateNewSolanaProgramFilesPayload,
   type CreateNewSolanaProgramFilesResponse,
+  type CreateNewStellarContractPayload,
+  type CreateNewStellarContractResponse,
   type RequestCompilationPayload,
   type RequestCompilationResponse,
   type Compilation,
@@ -644,6 +647,59 @@ export function useCreateSolanaProgramFiles() {
 
   return {
     createSolanaProgramFiles: handleCreateFiles,
+    isLoading,
+    error,
+  };
+}
+
+/**
+ * Hook to create new Stellar (Soroban) contract files using an RPC.
+ * @returns Function to trigger file creation, loading state, and error state.
+ */
+export function useCreateStellarContractFiles() {
+  const { mutate } = useSWRConfig();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCreateFiles = async (
+    payload: CreateNewStellarContractPayload
+  ): Promise<CreateNewStellarContractResponse | null> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log('useCreateStellarContractFiles: Calling action with payload:', payload);
+      const result = await createNewStellarContractFilesAction(payload);
+
+      if (!result || !result.success || !result.data) {
+        const errorMessage = result?.error || 'Failed to create Stellar contract files.';
+        console.error('useCreateStellarContractFiles: Error from action:', errorMessage, result);
+        throw new Error(errorMessage);
+      }
+
+      if (payload.projectId) {
+        await mutate(['projectFileHierarchy', payload.projectId]);
+        console.log(
+          `useCreateStellarContractFiles: Mutated SWR cache for projectFileHierarchy: ${payload.projectId}`
+        );
+      }
+
+      toast.success(`Contract files for '${payload.contractName}' created successfully!`);
+      console.log('useCreateStellarContractFiles: Files created successfully:', result.data);
+      return result.data;
+    } catch (err: any) {
+      const errorMessage =
+        err?.message || 'An unexpected error occurred while creating Stellar contract files.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error('useCreateStellarContractFiles: Catch block error:', err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    createStellarContractFiles: handleCreateFiles,
     isLoading,
     error,
   };

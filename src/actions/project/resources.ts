@@ -455,26 +455,23 @@ export async function getProjectEvmContractsAction(
   }
 }
 
+/**
+ * Fetches Solana program files for a given project.
+ * RPC: get_project_solana_programs
+ * @param projectId The ID of the project.
+ * @returns An ApiResponse containing the list of Solana program files.
+ */
 export async function getProjectSolanaProgramsAction(
   projectId: string
 ): Promise<ApiResponse<ProjectHierarchyItem[]>> {
-  /* console.log(`=== ACTION: getProjectSolanaProgramsAction started for projectId: ${projectId} ===`); */
   try {
     if (!projectId) {
       return { success: false, error: 'Invalid project ID.', data: null };
     }
 
-    // Opsiyonel: Oturum kontrolü
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData?.session) {
-      return { success: false, error: 'Authentication required.', data: null };
-    }
-
     const { data, error: rpcError } = await supabase.rpc('get_project_solana_programs', {
       p_project_id: projectId,
     });
-
-    /* console.log('RPC (get_project_solana_programs) raw data:', data); */
 
     if (rpcError) {
       console.error('RPC error (get_project_solana_programs):', rpcError.message);
@@ -485,16 +482,47 @@ export async function getProjectSolanaProgramsAction(
       };
     }
 
-    // RPC'den dönen json[] verisini ProjectHierarchyItem[] olarak cast ediyoruz.
-    // Supabase RPC'leri json döndürdüğünde, data zaten parse edilmiş bir dizi olacaktır.
-    const programs = (data || []) as ProjectHierarchyItem[];
-
-    /*  console.log(
-      `Solana programs fetched successfully for projectId: ${projectId}, items: ${programs.length}`
-    ); */
-    return { success: true, data: programs, error: undefined };
+    return { success: true, data: data || [], error: undefined };
   } catch (error: any) {
     console.error('Unexpected error in getProjectSolanaProgramsAction:', error);
+    return {
+      success: false,
+      error: error.message || 'An unexpected server error occurred.',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Fetches Stellar contract files for a given project.
+ * RPC: get_project_stellar_contracts
+ * @param projectId The ID of the project.
+ * @returns An ApiResponse containing the list of Stellar contract files.
+ */
+export async function getProjectStellarContractsAction(
+  projectId: string
+): Promise<ApiResponse<ProjectHierarchyItem[]>> {
+  try {
+    if (!projectId) {
+      return { success: false, error: 'Invalid project ID.', data: null };
+    }
+
+    const { data, error: rpcError } = await supabase.rpc('get_project_stellar_contracts', {
+      p_project_id: projectId,
+    });
+
+    if (rpcError) {
+      console.error('RPC error (get_project_stellar_contracts):', rpcError.message);
+      return {
+        success: false,
+        error: rpcError.message || 'Failed to fetch Stellar contracts.',
+        data: null,
+      };
+    }
+
+    return { success: true, data: data || [], error: undefined };
+  } catch (error: any) {
+    console.error('Unexpected error in getProjectStellarContractsAction:', error);
     return {
       success: false,
       error: error.message || 'An unexpected server error occurred.',
@@ -565,11 +593,21 @@ export interface CreateNewSolanaProgramFilesPayload {
 }
 
 /**
+ * Payload for creating new Stellar (Soroban) contract files.
+ */
+export interface CreateNewStellarContractPayload {
+  projectId: string;
+  contractName: string; // snake_case
+  contractIdStr: string; // The placeholder contract ID
+}
+
+/**
  * Response type for createNewEvmContractFilesAction,
  * assuming RPC returns an array of created file entries.
  */
 export type CreateNewEvmContractFilesResponse = ProjectFileEntry[];
 export type CreateNewSolanaProgramFilesResponse = ProjectFileEntry[];
+export type CreateNewStellarContractResponse = ProjectFileEntry[];
 
 /**
  * Calls the 'create_new_evm_contract' RPC to create standard contract, test, and script files
@@ -708,6 +746,75 @@ export async function createNewSolanaProgramFilesAction(
       success: false,
       error:
         error.message || 'An unexpected server error occurred while creating Solana program files.',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Calls the 'create_new_stellar_contract' RPC to create standard contract files
+ * for a new Soroban contract within a project.
+ *
+ * @param payload - Contains projectId, contractName, and a placeholder contractIdStr.
+ * @returns An ApiResponse containing the list of created project file entries.
+ */
+export async function createNewStellarContractFilesAction(
+  payload: CreateNewStellarContractPayload
+): Promise<ApiResponse<CreateNewStellarContractResponse>> {
+  console.log(
+    `=== ACTION: createNewStellarContractFilesAction for contract: ${payload.contractName}, projectId: ${payload.projectId} ===`
+  );
+
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session) {
+      console.error('Session not found or error fetching session:', sessionError?.message);
+      return { success: false, error: 'Authentication required.', data: null };
+    }
+
+    const rpcParams = {
+      p_project_id: payload.projectId,
+      p_contract_name: payload.contractName,
+      p_contract_id_str: payload.contractIdStr,
+    };
+
+    console.log('Calling RPC create_new_stellar_contract with params:', rpcParams);
+
+    const { data: newFiles, error: rpcError } = await supabase.rpc(
+      'create_new_stellar_contract',
+      rpcParams
+    );
+
+    if (rpcError) {
+      console.error(
+        'RPC error (create_new_stellar_contract):',
+        rpcError.message,
+        rpcError.details,
+        rpcError.hint
+      );
+      return {
+        success: false,
+        error: rpcError.message || 'Failed to create Stellar contract files.',
+        data: null,
+      };
+    }
+
+    if (!newFiles || newFiles.length === 0) {
+      console.warn('createNewStellarContractFilesAction: RPC returned no files or empty array.');
+      return { success: true, data: [], error: undefined };
+    }
+
+    console.log(
+      `Stellar contract files created/updated successfully for contract: ${payload.contractName}, files count: ${newFiles.length}`
+    );
+    return { success: true, data: newFiles, error: undefined };
+  } catch (error: any) {
+    console.error('Unexpected error in createNewStellarContractFilesAction:', error);
+    return {
+      success: false,
+      error:
+        error.message ||
+        'An unexpected server error occurred while creating Stellar contract files.',
       data: null,
     };
   }

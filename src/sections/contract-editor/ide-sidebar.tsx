@@ -33,6 +33,7 @@ import type {
   ArtifactForDeploy,
   EvmCompilerSettings,
   SolanaCompilerSettings,
+  StellarCompilerSettings,
   SimplifiedCompilationData,
 } from './view/contract-editor-view';
 
@@ -45,9 +46,10 @@ interface IdeSidebarProps {
   onFileSelect: (file: ProjectFile) => void;
   files: ProjectFile[] | null | undefined;
   isLoading: boolean;
-  platform?: 'evm' | 'solana' | null;
+  platform?: 'evm' | 'solana' | 'stellar' | null;
   onCompileEvm: (settings: EvmCompilerSettings) => Promise<void>;
   onCompileSolana: (settings: SolanaCompilerSettings) => Promise<void>;
+  onCompileStellar: (settings: StellarCompilerSettings) => Promise<void>;
   isCompiling: boolean;
   simplifiedCompilationData?: SimplifiedCompilationData | null;
   onDeployEvm: (deployConfig: {
@@ -113,6 +115,7 @@ export default function IdeSidebar({
   platform,
   onCompileEvm,
   onCompileSolana,
+  onCompileStellar,
   isCompiling,
   simplifiedCompilationData,
   onDeployEvm,
@@ -427,11 +430,12 @@ export default function IdeSidebar({
             }}
           >
             <IdeCompiler
-              platform={platform || null}
+              platform={platform ?? null}
               onCompileEvm={onCompileEvm}
               onCompileSolana={onCompileSolana}
+              onCompileStellar={onCompileStellar}
               isCompiling={isCompiling}
-              compilationUpdate={simplifiedCompilationData || null}
+              compilationUpdate={simplifiedCompilationData ?? null}
             />
           </Box>
         </>
@@ -465,7 +469,7 @@ export default function IdeSidebar({
             }}
           >
             <IdeDeploy
-              platform={platform || null}
+              platform={platform ?? null}
               onDeployEvm={onDeployEvm}
               onDeploySolana={onDeploySolana}
               isDeploying={isDeploying}
@@ -475,7 +479,7 @@ export default function IdeSidebar({
               onEvmAccordionChange={onEvmAccordionChange}
               expandedSolanaAccordion={expandedSolanaAccordion}
               onSolanaAccordionChange={onSolanaAccordionChange}
-              compiledArtifactsForDeploy={compiledArtifactsForDeploy || []}
+              compiledArtifactsForDeploy={compiledArtifactsForDeploy ?? []}
             />
           </Box>
         </>

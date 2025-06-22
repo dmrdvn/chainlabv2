@@ -13,11 +13,11 @@ export interface Project {
   description: string | null;
   owner_id: string;
   visibility: ProjectVisibility;
-  platform: 'evm' | 'solana' | null;
+  platform: 'evm' | 'solana' | 'stellar' | null;
   tags: string[];
   logo_url: string | null;
   social_links: ProjectSocialLinks | null;
-  github_repo_url?: string | null; 
+  github_repo_url?: string | null;
   archived: boolean;
   created_at: string | null;
   updated_at: string | null;
@@ -31,7 +31,7 @@ export type ProjectUpdatePayload = {
   name?: string;
   description?: string | null;
   visibility?: ProjectVisibility;
-  platform?: 'evm' | 'solana';
+  platform?: 'evm' | 'solana' | 'stellar';
   tags?: string[];
   logo_url?: string | null;
   social_links?: ProjectSocialLinks | null;
@@ -78,7 +78,6 @@ export interface ProjectFile {
   children?: ProjectFile[];
 }
 
-
 /**
  * @interface ProjectFileEntry
  * @description Bir proje dosyasının temel giriş bilgilerini temsil eder.
@@ -91,9 +90,9 @@ export interface ProjectFile {
  * @property {string} name - Dosyanın adı (örneğin, `MyContract.sol`).
  */
 export interface ProjectFileEntry {
-  id: string;       // uuid, primary key of the file in project_files table
-  path: string;     // text, full path of the file within the project (e.g., /contracts/MyContract.sol)
-  name: string;     // character varying(255), name of the file (e.g., MyContract.sol)
+  id: string; // uuid, primary key of the file in project_files table
+  path: string; // text, full path of the file within the project (e.g., /contracts/MyContract.sol)
+  name: string; // character varying(255), name of the file (e.g., MyContract.sol)
 }
 
 /**
@@ -106,7 +105,7 @@ export interface ProjectFileEntry {
  * @property {string} name - Dosya veya klasörün adı (`ProjectFile.file_name`).
  * @property {string} path - Dosya veya klasörün proje kök dizininden itibaren tam yolu (`ProjectFile.file_path`).
  * @property {'file' | 'directory'} type - Öğenin dosya mı yoksa klasör mü olduğunu belirtir (`ProjectFile.is_directory`'den türetilir).
- * @property {'evm' | 'solana' | string} platform - Öğenin ait olduğu projenin platformu (örn: 'evm', 'solana'). Bu bilgi genellikle projenin genel ayarlarından gelir.
+ * @property {'evm' | 'solana' | 'stellar' | string} platform - Öğenin ait olduğu projenin platformu (örn: 'evm', 'solana', 'stellar'). Bu bilgi genellikle projenin genel ayarlarından gelir.
  * @property {string | null} file_type - Dosyanın türünü belirten daha kullanıcı dostu bir ifade (örn: 'solidity', 'javascript', 'json'). `ProjectFile.mime_type` veya dosya uzantısından türetilebilir. Klasörler için `null` olabilir.
  * @property {string | null} parent_id - Öğenin içinde bulunduğu üst klasörün kimliği. Kök dizindeki öğeler için `null` olabilir (`ProjectFile.parent_id`).
  * @property {number | null} [children_count] - Eğer öğe bir klasörse, içerdiği doğrudan alt öğe (dosya/klasör) sayısı. Hesaplanması gerekebilir.
@@ -116,7 +115,7 @@ export interface ProjectHierarchyItem {
   name: string;
   path: string;
   type: 'file' | 'directory';
-  platform: 'evm' | 'solana' | string;
+  platform: 'evm' | 'solana' | 'stellar' | string;
   file_type: string | null;
   parent_id: string | null;
   children_count?: number | null;
@@ -128,7 +127,7 @@ export interface ProjectHierarchyItem {
  */
 export enum CompilationStatus {
   NOT_COMPILED = 'not_compiled', // Henüz derlenmemiş
-  COMPILING = 'compiling',       // Şu anda derleniyor
+  COMPILING = 'compiling', // Şu anda derleniyor
   COMPILED_SUCCESS = 'compiled_success', // Başarıyla derlendi
   COMPILED_WITH_WARNINGS = 'compiled_with_warnings', // Uyarılarla derlendi
   FAILED_COMPILATION = 'failed_compilation', // Derleme başarısız oldu
@@ -139,8 +138,8 @@ export enum CompilationStatus {
  * @description Bir kontratın veya programın dağıtım (deploy) durumunu belirtir.
  */
 export enum DeploymentStatus {
-  NOT_DEPLOYED = 'not_deployed',   // Henüz deploy edilmemiş
-  DEPLOYING = 'deploying',         // Şu anda deploy ediliyor
+  NOT_DEPLOYED = 'not_deployed', // Henüz deploy edilmemiş
+  DEPLOYING = 'deploying', // Şu anda deploy ediliyor
   DEPLOYED_SUCCESS = 'deployed_success', // Başarıyla deploy edildi
   FAILED_DEPLOYMENT = 'failed_deployment', // Deploy başarısız oldu
 }
@@ -151,7 +150,7 @@ export enum DeploymentStatus {
  * (Eğer denetim süreci hala bir özellikse ve takip ediliyorsa kullanılır.)
  */
 export enum AuditProcessStatus {
-  NO_AUDIT = 'no_audit',           // Denetim yapılmamış/istenmemiş
+  NO_AUDIT = 'no_audit', // Denetim yapılmamış/istenmemiş
   PENDING_AUDIT = 'pending_audit', // Denetim bekleniyor
   AUDIT_IN_PROGRESS = 'audit_in_progress', // Denetim devam ediyor
   AUDIT_COMPLETED_PASSED = 'audit_completed_passed', // Denetim tamamlandı (Başarılı)
@@ -166,27 +165,27 @@ export enum AuditProcessStatus {
  * Bu bilgiler genellikle `project_files`, `project_versions` ve potansiyel bir `deployments` tablosundan türetilir.
  */
 export interface DisplayableContractInfo {
-  id: string;                      // Genellikle ana kontrat dosyasının `project_files.id`'si
-  name: string;                    // Kontratın/Programın adı (`project_files.file_name`)
-  project_id: string;              // Ait olduğu projenin ID'si
-  project_version_id: string;      // Ait olduğu proje versiyonunun ID'si
-  file_path: string;               // Ana kontrat dosyasının yolu (`project_files.file_path`)
-  platform: 'evm' | 'solana' | string; // Projenin platformu (`projects.platform`)
+  id: string; // Genellikle ana kontrat dosyasının `project_files.id`'si
+  name: string; // Kontratın/Programın adı (`project_files.file_name`)
+  project_id: string; // Ait olduğu projenin ID'si
+  project_version_id: string; // Ait olduğu proje versiyonunun ID'si
+  file_path: string; // Ana kontrat dosyasının yolu (`project_files.file_path`)
+  platform: 'evm' | 'solana' | 'stellar' | string; // Projenin platformu (`projects.platform`)
 
   compilation_status: CompilationStatus; // Derleme durumu
-  last_compiled_at?: string | null;     // Son başarılı derleme zamanı
+  last_compiled_at?: string | null; // Son başarılı derleme zamanı
 
-  deployment_status: DeploymentStatus;   // Dağıtım durumu
-  last_deployed_at?: string | null;     // Son başarılı dağıtım zamanı
-  deployment_id?: string | null;        // Opsiyonel: Ayrı bir 'deployments' tablosuna referans
+  deployment_status: DeploymentStatus; // Dağıtım durumu
+  last_deployed_at?: string | null; // Son başarılı dağıtım zamanı
+  deployment_id?: string | null; // Opsiyonel: Ayrı bir 'deployments' tablosuna referans
 
-  audit_status?: AuditProcessStatus;    // Denetim durumu (opsiyonel, eğer kullanılıyorsa)
-  last_audit_at?: string | null;        // Son denetim tamamlanma zamanı
+  audit_status?: AuditProcessStatus; // Denetim durumu (opsiyonel, eğer kullanılıyorsa)
+  last_audit_at?: string | null; // Son denetim tamamlanma zamanı
 
-  created_at: string;                  // Genellikle dosyanın oluşturulma zamanı
-  updated_at: string;                  // Dosyanın son güncellenme zamanı
-  tags?: string[] | null;              // İlgili etiketler
-  description?: string | null;         // Kısa açıklama
+  created_at: string; // Genellikle dosyanın oluşturulma zamanı
+  updated_at: string; // Dosyanın son güncellenme zamanı
+  tags?: string[] | null; // İlgili etiketler
+  description?: string | null; // Kısa açıklama
 }
 
 export interface ApiResponse<T> {

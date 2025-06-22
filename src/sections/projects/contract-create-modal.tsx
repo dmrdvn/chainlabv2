@@ -5,6 +5,8 @@ import type {
   CreateNewEvmContractFilesResponse,
   CreateNewSolanaProgramFilesPayload,
   CreateNewSolanaProgramFilesResponse,
+  CreateNewStellarContractPayload,
+  CreateNewStellarContractResponse,
 } from 'src/actions/project/resources';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -25,9 +27,11 @@ import {
 import {
   useCreateEvmContractFiles,
   useCreateSolanaProgramFiles,
+  useCreateStellarContractFiles,
 } from 'src/hooks/projects/use-project-mutations';
 
 import { generateProgramIdAndKeypairContent } from 'src/utils/solanaKeypairUtils';
+import { generateStellarContractId } from 'src/utils/stellar-utils';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -37,7 +41,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   projectId: string;
-  platform: 'evm' | 'solana';
+  platform: 'evm' | 'solana' | 'stellar';
   onSuccess?: (newItemIdOrPath: string) => void;
 };
 
@@ -50,25 +54,26 @@ export default function ContractCreateModal({
 }: Props) {
   const evmCreation = useCreateEvmContractFiles();
   const solanaCreation = useCreateSolanaProgramFiles();
+  const stellarCreation = useCreateStellarContractFiles();
 
-  const {
-    isLoading: isCreating,
-    error: createError,
-    mutateAsync: actualCreateFunction,
-  } = useMemo(() => {
+  const { isLoading: isCreating, error: createError } = useMemo(() => {
     if (platform === 'evm') {
       return {
         isLoading: evmCreation.isLoading,
         error: evmCreation.error,
-        mutateAsync: evmCreation.createEvmContractFiles,
+      };
+    }
+    if (platform === 'stellar') {
+      return {
+        isLoading: stellarCreation.isLoading,
+        error: stellarCreation.error,
       };
     }
     return {
       isLoading: solanaCreation.isLoading,
       error: solanaCreation.error,
-      mutateAsync: solanaCreation.createSolanaProgramFiles,
     };
-  }, [platform, evmCreation, solanaCreation]);
+  }, [platform, evmCreation, solanaCreation, stellarCreation]);
 
   const defaultFormValues = {
     name: '',
@@ -101,8 +106,11 @@ export default function ContractCreateModal({
     }
 
     try {
-      let result: CreateNewEvmContractFilesResponse | CreateNewSolanaProgramFilesResponse | null =
-        null;
+      let result:
+        | CreateNewEvmContractFilesResponse
+        | CreateNewSolanaProgramFilesResponse
+        | CreateNewStellarContractResponse
+        | null = null;
 
       if (platform === 'evm') {
         const payload: CreateNewEvmContractFilesPayload = {
@@ -120,6 +128,14 @@ export default function ContractCreateModal({
           keypairJsonContent,
         };
         result = await solanaCreation.createSolanaProgramFiles(payload);
+      } else if (platform === 'stellar') {
+        const contractId = generateStellarContractId();
+        const payload: CreateNewStellarContractPayload = {
+          projectId,
+          contractName: formValues.name,
+          contractIdStr: contractId,
+        };
+        result = await stellarCreation.createStellarContractFiles(payload);
       } else {
         // Should not happen if platform is always 'evm' or 'solana'
         console.error('Invalid platform:', platform);
@@ -193,7 +209,7 @@ export default function ContractCreateModal({
       }}
     >
       <DialogTitle id="item-create-dialog-title">
-        {platform === 'evm' ? 'Create New Contract' : 'Create New Program'}
+        {platform === 'solana' ? 'Create New Program' : 'Create New Contract'}
         {!isCreating && (
           <IconButton
             aria-label="close"
@@ -220,7 +236,7 @@ export default function ContractCreateModal({
         <Stack spacing={3} mt={1}>
           <TextField
             name="name"
-            label={platform === 'evm' ? 'Contract Name' : 'Program Name'}
+            label={platform === 'solana' ? 'Program Name' : 'Contract Name'}
             fullWidth
             value={formValues.name}
             onChange={handleTextFieldChange}
@@ -242,7 +258,11 @@ export default function ContractCreateModal({
           disabled={isCreating}
           startIcon={isCreating ? <CircularProgress size={20} color="inherit" /> : null}
         >
-          {isCreating ? 'Creating...' : platform === 'evm' ? 'Create Contract' : 'Create Program'}
+          {isCreating
+            ? 'Creating...'
+            : platform === 'solana'
+              ? 'Create Program'
+              : 'Create Contract'}
         </Button>
       </DialogActions>
     </Dialog>

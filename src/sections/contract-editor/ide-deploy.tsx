@@ -85,7 +85,7 @@ const mockSolanaWallets = {
 // --- End of Mock Data ---
 
 interface IdeDeployProps {
-  platform: 'evm' | 'solana' | null;
+  platform: 'evm' | 'solana' | 'stellar' | null;
   onDeployEvm: (deployConfig: {
     environmentId: string;
     walletAddress: string;
@@ -147,6 +147,9 @@ export function IdeDeploy({
   const [selectedArtifactIdSolana, setSelectedArtifactIdSolana] = useState<string>('');
   const [browserSolanaAccounts, setBrowserSolanaAccounts] = useState<SolanaAccountInfo[]>([]);
   const [selectedSolanaAccountAddress, setSelectedSolanaAccountAddress] = useState<string>('');
+
+  // Stellar (Soroban) States
+  const [selectedArtifactIdStellar, setSelectedArtifactIdStellar] = useState<string>('');
 
   // EVM Deploy Buton Handler'ı
   const handleDeployEvmClick = () => {
@@ -925,9 +928,50 @@ export function IdeDeploy({
     );
   };
 
+  const renderStellarDeploy = () => {
+    const stellarArtifacts = compiledArtifactsForDeploy.filter((a) => a.platform === 'stellar');
+
+    return (
+      <Stack spacing={2}>
+        <Typography variant="h6">Stellar Deployment</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Stellar (Soroban) deployment functionality is not yet implemented.
+        </Typography>
+
+        <FormControl fullWidth size="small">
+          <InputLabel>Compiled Contract</InputLabel>
+          <Select
+            value={selectedArtifactIdStellar}
+            onChange={(e) => setSelectedArtifactIdStellar(e.target.value)}
+            label="Compiled Contract"
+            disabled={stellarArtifacts.length === 0}
+          >
+            {stellarArtifacts.map((artifact) => (
+              <MenuItem key={artifact.id} value={artifact.id}>
+                {artifact.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <Button
+          variant="contained"
+          color="primary"
+          disabled
+          fullWidth
+          startIcon={<Iconify icon="logos:stellar" />}
+        >
+          Deploy Contract (Coming Soon)
+        </Button>
+      </Stack>
+    );
+  };
+
   return (
     <Stack spacing={3} sx={{ px: 2, py: 4, flexGrow: 1 }}>
-      {platform === 'solana' ? renderSolanaDeploy() : renderEvmDeploy()}
+      {platform === 'evm' && renderEvmDeploy()}
+      {platform === 'solana' && renderSolanaDeploy()}
+      {platform === 'stellar' && renderStellarDeploy()}
     </Stack>
   );
 }

@@ -31,4 +31,14 @@ export enum AnchorVersion { // For Solana
   V0_27_0 = '0.27.0',
 }
 
+export enum SorobanVersion {
+  V22_0_0 = '22.0.0', // Example version, adjust as needed
+  V21_0_0 = '21.0.0',
+}
+
+export const solidityVersionValues = Object.values(SolidityVersion);
+export const evmVersionValues = Object.values(EvmVersion);
+export const anchorVersionValues = Object.values(AnchorVersion);
+export const sorobanVersionValues = Object.values(SorobanVersion);
+
 // Add other compiler-related constants or types here if needed
